@@ -3,71 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>TOKOYAKI JUMP</title>
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
+    <title>TOKOYAKI！JUMP！DANCE！</title>
     <style>
-        :root {
-            /* Safariのバーを除いた「本当の表示高さ」を定義 */
-            --vh: 100vh;
-            --vh: 100dvh; 
-        }
-
         body {
             margin: 0;
             padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            /* 修正：100vhではなくdvh（動的高さ）を使用 */
-            height: var(--vh);
+            /* iOS Safari 100vh fix */
+            height: 100dvh;
             background-color: #87ceeb;
             color: #fff;
-            font-family: sans-serif;
+            font-family: 'Segoe UI', 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', sans-serif;
             overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
             touch-action: none;
-            -webkit-text-size-adjust: 100%;
         }
-
         #game-outer {
             width: 100%;
             height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
-            /* iPhoneのノッチ・ホームバーを避ける安全地帯の設定 */
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-            box-sizing: border-box;
+            position: relative;
         }
-
         #game-container {
             position: relative;
-            background: #87ceeb;
-            /* 修正：画面からはみ出さないよう、縦横比を保ちつつ最大サイズを制限 */
-            width: 100%;
-            height: 100%;
-            max-width: 100vw;
-            max-height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border: 2px solid #fff;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
             overflow: hidden;
+            border: 4px solid #fff;
+            background: #87ceeb;
+            max-width: 100vw;
+            max-height: 100dvh;
+            transition: background 0.5s;
+            /* Hardware acceleration for Safari */
+            transform: translateZ(0);
         }
-
         canvas {
-            /* 修正：Canvasが親要素(container)に収まるように自動リサイズ */
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
             display: block;
+            background: transparent;
+            max-width: 100%;
+            height: auto;
+            cursor: pointer;
         }
-
-        /* UI要素の位置調整：画面端に寄りすぎないようにする */
         .ui-layer {
             position: absolute;
             top: 0;
@@ -76,30 +57,212 @@
             height: 100%;
             pointer-events: none;
         }
-        
         #hud-top {
-            top: 10px;
-            left: 10px;
-        }
-
-        #mobile-controls {
-            bottom: 10px;
-            right: 10px;
-        }
-
-        /* 全画面ボタン */
-        #fullscreen-btn {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 100;
-            background: rgba(0,0,0,0.5);
-            border: 1px solid #fff;
-            color: #fff;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 12px;
+            top: 15px;
+            left: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            display: none;
+        }
+        .hud-item {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #2e7d32;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        #level-display {
+            color: #d84315;
+            background: #fff9c4;
+        }
+        #fever-container {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            border: 2px solid #fff;
+            overflow: hidden;
+            display: none;
+        }
+        #fever-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(to right, #ff4081, #ffeb3b);
+            transition: width 0.1s;
+        }
+        #dance-label {
+            position: absolute;
+            top: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4081;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            display: none;
+            animation: pulse 0.5s infinite;
+            font-size: 14px;
+        }
+        #level-up-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            color: #d84315;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-weight: 900;
+            font-size: 32px;
+            display: none;
+            z-index: 10;
+            border: 4px solid #ffeb3b;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        }
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.1); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+        #combo-container {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            display: none;
+        }
+        #combo {
+            font-size: 40px;
+            font-weight: 900;
+            color: #d84315;
+            text-shadow: 2px 2px 0px #fff;
+        }
+        
+        #mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
             pointer-events: auto;
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            z-index: 30;
+        }
+        .ctrl-btn {
+            width: 75px;
+            height: 75px;
+            border: 4px solid white;
+            border-radius: 50%;
+            color: white;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            font-size: 16px;
+        }
+        #dance-btn { background: rgba(233, 30, 99, 0.8); }
+        #jump-btn { background: rgba(30, 136, 229, 0.8); width: 85px; height: 85px; }
+
+        .screen-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 40;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+        
+        #start-screen {
+            background: linear-gradient(135deg, rgba(135, 206, 235, 0.9), rgba(224, 247, 250, 0.9));
+        }
+
+        .main-title {
+            font-size: clamp(24px, 7vw, 56px);
+            font-weight: 900;
+            color: #ff5722;
+            text-shadow: 3px 3px 0 #fff;
+            margin-bottom: 10px;
+            font-style: italic;
+            padding: 0 10px;
+            line-height: 1.2;
+        }
+
+        .btn-start {
+            padding: 10px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            background: #ffeb3b;
+            color: #d84315;
+            border: 4px solid #fff;
+            border-radius: 50px;
+            box-shadow: 0 6px 0 #fbc02d;
+            margin-bottom: 10px;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+
+        #game-over-screen { display: none; }
+
+        .high-score-label {
+            color: #ff9800;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 2px 10px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .instruction-box {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 15px;
+            border-radius: 15px;
+            color: #333;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            border: 2px solid #ff5722;
+            text-align: left;
+            max-width: 320px;
+        }
+
+        /* Flash effect for Fever start */
+        #flash-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 100;
         }
     </style>
 </head>
@@ -107,82 +270,621 @@
 
     <div id="game-outer">
         <div id="game-container">
-            <button id="fullscreen-btn" onclick="toggleFullscreen(event)">⛶ 全画面</button>
+            <div id="flash-overlay"></div>
             <canvas id="gameCanvas"></canvas>
-            
+
             <div class="ui-layer">
-                <div id="hud-top" style="position:absolute; display:none; flex-direction:column; gap:5px; pointer-events:none;">
-                    <div id="score-display" style="background:rgba(255,255,255,0.9); color:#2e7d32; padding:5px 15px; border-radius:20px; font-weight:bold;">SCORE: 0</div>
+                <div id="hud-top">
+                    <div id="score-display" class="hud-item">SCORE: 0</div>
+                    <div id="level-display" class="hud-item">LEVEL 1</div>
                 </div>
-                <div id="mobile-controls" style="position:absolute; display:none; gap:10px; pointer-events:auto;">
-                    <div id="dance-btn" style="width:70px; height:70px; background:rgba(233,30,99,0.8); border-radius:50%; display:flex; align-items:center; justify-content:center; border:3px solid #fff;">DANCE</div>
-                    <div id="jump-btn" style="width:80px; height:80px; background:rgba(30,136,229,0.8); border-radius:50%; display:flex; align-items:center; justify-content:center; border:3px solid #fff;">JUMP</div>
+                
+                <div id="combo-container">
+                    <div id="combo">0</div>
+                </div>
+
+                <div id="fever-container">
+                    <div id="fever-bar"></div>
+                </div>
+
+                <div id="dance-label">DANCING! SCORE UP!</div>
+                <div id="level-up-label">LEVEL UP!</div>
+
+                <div id="mobile-controls">
+                    <div id="dance-btn" class="ctrl-btn">DANCE</div>
+                    <div id="jump-btn" class="ctrl-btn">JUMP</div>
                 </div>
             </div>
+            
+            <div id="start-screen" class="screen-overlay" onclick="startGame(event)">
+                <h1 class="main-title">TOKOYAKI！JUMP！DANCE！</h1>
+                <div id="title-high-score" class="high-score-label">BEST: 0</div>
+                
+                <div class="instruction-box">
+                    ・障害物を避けろ！<br>
+                    ・たこ焼きを拾え！<br>
+                    ・<b>激辛たこ焼き</b>は避けろ！<br>
+                    ・ダンスで<b>フィーバーゲージ</b>を溜めろ！<br>
+                    <hr style="border: none; border-top: 1px dashed #ff5722; margin: 8px 0;">
+                    <b>【操作方法】</b><br>
+                    🖱️ 画面クリック or 🚀 <b>JUMP</b>ボタン: ジャンプ<br>
+                    ⌨️ スペース or 💃 <b>DANCE</b>ボタン: ダンス
+                </div>
 
-            <div id="start-screen" onclick="startGame(event)" style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; z-index:200;">
-                <h2 style="color:#ffeb3b; margin-bottom:10px;">TOKOYAKI JUMP</h2>
-                <p style="color:#fff; font-size:14px; text-align:center; padding:0 20px;">
-                    JUMPで障害物をよけろ！<br>
-                    ※iPhoneは横向き推奨<br>
-                    (Safariは「ホーム画面に追加」で全画面化)
-                </p>
-                <div style="background:#ffeb3b; color:#d84315; padding:10px 30px; border-radius:30px; font-weight:bold; margin-top:20px;">START</div>
+                <div class="btn-start">START</div>
+            </div>
+
+            <div id="game-over-screen" class="screen-overlay" onclick="backToTitle(event)">
+                <h1 style="color: #ff5252; text-shadow: 2px 2px 0 #fff; margin-bottom: 5px;">GAME OVER</h1>
+                <p id="final-score" style="font-size: 32px; font-weight: bold; margin: 10px 0;">Score: 0</p>
+                <div id="over-high-score" class="high-score-label" style="display: none;">NEW BEST!</div>
+                <div class="btn-start" style="margin-top: 10px; font-size: 18px;">BACK TO TITLE</div>
             </div>
         </div>
     </div>
 
     <script>
-        // スクリプト部分は前回のロジックを継承
-        // resize関数を以下のようにアップデート
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score-display');
+        const levelEl = document.getElementById('level-display');
+        const comboEl = document.getElementById('combo');
+        const comboContainer = document.getElementById('combo-container');
+        const hudTop = document.getElementById('hud-top');
+        const feverContainer = document.getElementById('fever-container');
+        const feverBar = document.getElementById('fever-bar');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalScoreEl = document.getElementById('final-score');
+        const titleHighScoreEl = document.getElementById('title-high-score');
+        const overHighScoreEl = document.getElementById('over-high-score');
+        const danceLabel = document.getElementById('dance-label');
+        const levelUpLabel = document.getElementById('level-up-label');
+        const mobileControls = document.getElementById('mobile-controls');
+        const danceBtn = document.getElementById('dance-btn');
+        const jumpBtn = document.getElementById('jump-btn');
+        const gameContainer = document.getElementById('game-container');
+        const flashOverlay = document.getElementById('flash-overlay');
+
+        // --- Configuration ---
+        const SPICY_CHANCE = 0.3; 
+        const ITEM_SPAWN_CHANCE = 0.25;
+        const FEVER_MAX = 100;
+        const FEVER_DURATION = 360; 
+        const FEVER_CHARGE_SPEED = 0.25; 
+        const LEVEL_UP_INTERVAL = 1200; 
+
         function resize() {
-            const container = document.getElementById('game-container');
-            const canvas = document.getElementById('gameCanvas');
-            const ratio = 800 / 400;
-
-            let w = container.clientWidth;
-            let h = container.clientHeight;
-
-            if (w / h > ratio) {
-                w = h * ratio;
-            } else {
-                h = w / ratio;
-            }
-
+            const targetRatio = 800 / 400;
+            let w = window.innerWidth;
+            let h = window.innerHeight;
+            if (w / h > targetRatio) w = h * targetRatio; else h = w / targetRatio;
             canvas.style.width = w + 'px';
             canvas.style.height = h + 'px';
-            
-            // 重要：スクロール位置を強制リセット
-            window.scrollTo(0, 0);
         }
+        window.addEventListener('resize', resize);
+        resize();
 
-        // 全画面切り替え (iPhone Safari用Webkit対応含む)
-        function toggleFullscreen(e) {
-            if (e) e.stopPropagation();
-            const container = document.getElementById('game-container');
-            if (!document.webkitFullscreenElement && !document.fullscreenElement) {
-                if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
-                else if (container.requestFullscreen) container.requestFullscreen();
-            } else {
-                if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-                else if (document.exitFullscreen) document.exitFullscreen();
+        canvas.width = 800;
+        canvas.height = 400;
+
+        // Safari AudioContext initialization
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
             }
         }
 
-        // --- 以下、ゲームのメインロジック（前回のもの）をここに配置 ---
-        // (canvasの定義、playerのupdate/draw、animate関数など)
-        // 省略していますが、前回のスクリプトをそのまま入れて動作します。
-        
-        window.addEventListener('resize', resize);
-        window.onload = resize;
-        
-        // スタートボタンの処理（前回のロジックをここへ）
-        function startGame(e) {
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('hud-top').style.display = 'flex';
-            document.getElementById('mobile-controls').style.display = 'flex';
-            // ゲーム開始・描画ループ開始
+        function playSound(freq, type, duration, volume = 0.1) {
+            try {
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
         }
+
+        const sounds = {
+            jump: () => playSound(400, 'square', 0.2, 0.05),
+            score: () => playSound(800, 'sine', 0.1, 0.05),
+            bonus: () => { playSound(1200, 'sine', 0.1, 0.05); setTimeout(() => playSound(1600, 'sine', 0.2, 0.05), 50); },
+            dance: () => { if (frameCount % 10 === 0) playSound(600, 'sine', 0.05, 0.02); },
+            crash: () => playSound(100, 'sawtooth', 0.4, 0.15),
+            fire: () => playSound(200, 'sawtooth', 0.1, 0.1),
+            levelUp: () => { playSound(500, 'sine', 0.1, 0.05); setTimeout(() => playSound(700, 'sine', 0.2, 0.05), 100); },
+            gameOver: () => { playSound(150, 'sawtooth', 0.5, 0.1); playSound(100, 'sawtooth', 0.5, 0.1); },
+            feverFanfare: () => {
+                const baseFreq = 440;
+                const notesNotes = [1, 1.25, 1.5, 1.875, 2];
+                notesNotes.forEach((ratio, i) => {
+                    setTimeout(() => {
+                        playSound(baseFreq * ratio, 'square', 0.4, 0.08);
+                        if (i === notesNotes.length - 1) {
+                            playSound(55, 'sawtooth', 0.6, 0.15); 
+                        }
+                    }, i * 100);
+                });
+            },
+            discoBeat: () => {
+                if (isFever && frameCount % 30 === 0) {
+                    const step = (frameCount / 30) % 4;
+                    if (step === 0) playSound(100, 'sine', 0.3, 0.1); 
+                    else if (step === 2) playSound(800, 'square', 0.05, 0.03); 
+                    else playSound(1000, 'sine', 0.05, 0.01); 
+                }
+            }
+        };
+
+        let score = 0;
+        let combo = 0;
+        let highScore = parseInt(localStorage.getItem('takoyaki_highscore')) || 0;
+        let isGameOver = false;
+        let isGameStarted = false;
+        let isCrashing = false;
+        let crashType = 'normal'; 
+        let crashTimer = 0;
+        let frameCount = 0;
+        let feverValue = 0;
+        let isFever = false;
+        let feverTimer = 0;
+        
+        const BASE_SPEED = 7.0;
+        let currentLevel = 1;
+        let gameSpeed = BASE_SPEED;
+
+        const SCROLL_SPEED = 800 / LEVEL_UP_INTERVAL; 
+        const backgroundAssets = { 
+            trees: [{x: 50}, {x: 250}, {x: 450}, {x: 650}, {x: 850}] 
+        };
+
+        const keys = { jump: false, dance: false };
+        const notes = [];
+        const obstacles = [];
+        const items = [];
+        const flames = [];
+
+        titleHighScoreEl.innerText = `BEST: ${highScore}`;
+
+        const player = {
+            x: 80, y: 300, width: 40, height: 50, dy: 0, 
+            gravity: 0.65, 
+            jumpPower: -16.12, 
+            minJumpSpeed: -4, 
+            grounded: true,
+            isDancing: false,
+            draw() {
+                notes.forEach((note, index) => {
+                    ctx.save(); ctx.globalAlpha = note.life; ctx.fillStyle = note.color;
+                    ctx.font = `${note.size}px serif`; ctx.fillText(note.text, note.x, note.y);
+                    ctx.restore(); note.x += note.vx; note.y += note.vy; note.life -= 0.02;
+                    if (note.life <= 0) notes.splice(index, 1);
+                });
+
+                flames.forEach((f, index) => {
+                    ctx.save(); ctx.globalAlpha = f.life; ctx.fillStyle = f.color;
+                    ctx.beginPath(); ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore(); f.x += f.vx; f.y += f.vy; f.life -= 0.03;
+                    if (f.life <= 0) flames.splice(index, 1);
+                });
+
+                ctx.save();
+                let drawX = this.x; let drawY = this.y;
+                if (this.isDancing) {
+                    drawX += Math.sin(frameCount * 0.5) * 10;
+                    if (frameCount % 8 === 0) {
+                        notes.push({
+                            x: drawX + 20, y: drawY, vx: (Math.random() - 0.5) * 4, vy: -Math.random() * 3 - 2,
+                            text: ['♪', '♫', '♬'][Math.floor(Math.random() * 3)],
+                            color: isFever ? `hsl(${(frameCount * 10) % 360}, 100%, 70%)` : ['#ff4081', '#ffeb3b', '#00e676', '#2979ff'][Math.floor(Math.random() * 4)],
+                            size: 16 + Math.random() * 10, life: 1.0
+                        });
+                    }
+                }
+                
+                if (isCrashing) { 
+                    drawX += (Math.random() - 0.5) * 10; 
+                    drawY += (Math.random() - 0.5) * 10; 
+                    if (crashType === 'spicy' && crashTimer > 0) {
+                        for(let i=0; i<3; i++) {
+                            flames.push({
+                                x: drawX + 30, y: drawY + 15, vx: 5 + Math.random() * 5, vy: (Math.random() - 0.5) * 6,
+                                size: 5 + Math.random() * 10, color: Math.random() > 0.5 ? '#ff4e00' : '#ffeb3b', life: 1.0
+                            });
+                        }
+                        if (frameCount % 5 === 0) sounds.fire();
+                    }
+                }
+
+                ctx.translate(drawX, drawY);
+                if (isFever) {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = `hsl(${(frameCount * 5) % 360}, 100%, 50%)`;
+                }
+                ctx.fillStyle = isCrashing ? '#ff5252' : (this.isDancing ? '#e91e63' : '#1e88e5'); 
+                ctx.fillRect(5, 20, 30, 20); 
+                ctx.fillStyle = crashType === 'spicy' && isCrashing ? '#d32f2f' : '#ffccbc'; 
+                ctx.fillRect(10, 0, 20, 20);
+                ctx.fillStyle = '#4e342e'; ctx.fillRect(10, 0, 20, 5);
+                
+                ctx.fillStyle = '#000';
+                if (isCrashing) {
+                    ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(12, 5); ctx.lineTo(16, 9); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(16, 5); ctx.lineTo(12, 9); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(24, 5); ctx.lineTo(28, 9); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(28, 5); ctx.lineTo(24, 9); ctx.stroke();
+                    if (crashType === 'spicy') { ctx.fillStyle = '#000'; ctx.fillRect(18, 12, 10, 6); }
+                    else { ctx.fillRect(20, 14, 5, 2); }
+                } else if (this.isDancing) {
+                    ctx.beginPath(); ctx.arc(14, 10, 2, 0, Math.PI); ctx.stroke(); 
+                    ctx.beginPath(); ctx.arc(26, 10, 2, 0, Math.PI); ctx.stroke(); 
+                } else {
+                    ctx.fillRect(22, 7, 3, 3);
+                }
+
+                const legOffset = Math.sin(frameCount * 0.2) * 5;
+                if (this.grounded) {
+                    if (this.isDancing) { ctx.fillRect(5, 40, 8, 10); ctx.fillRect(27, 40, 8, 10); }
+                    else { ctx.fillRect(8, 40, 8, 10); ctx.fillRect(24, 40, 8, 10); }
+                } else {
+                    ctx.fillRect(8, 40, 8, 10 + legOffset); ctx.fillRect(24, 40, 8, 10 - legOffset);
+                }
+                ctx.restore();
+            },
+            update() {
+                if (!isGameStarted || isCrashing) return;
+                this.isDancing = keys.dance && this.grounded;
+                if (this.isDancing) {
+                    danceLabel.style.display = 'block'; addScore(2); sounds.dance();
+                    if (!isFever) {
+                        feverValue = Math.min(FEVER_MAX, feverValue + FEVER_CHARGE_SPEED);
+                        if (feverValue >= FEVER_MAX) startFever();
+                    }
+                } else {
+                    danceLabel.style.display = 'none';
+                }
+                
+                if (keys.jump && this.grounded && !this.isDancing) {
+                    this.dy = this.jumpPower; 
+                    this.grounded = false; 
+                    sounds.jump();
+                } 
+                
+                if (!this.grounded) {
+                    if (!keys.jump && this.dy < this.minJumpSpeed) {
+                        this.dy = this.minJumpSpeed; 
+                    }
+                    this.dy += this.gravity; 
+                    this.y += this.dy;
+                    if (this.y + this.height > 350) { 
+                        this.y = 350 - this.height; 
+                        this.dy = 0; 
+                        this.grounded = true; 
+                    }
+                }
+                feverBar.style.width = feverValue + '%';
+            }
+        };
+
+        function startFever() {
+            if (isFever) return;
+            isFever = true; 
+            feverTimer = FEVER_DURATION;
+            gameContainer.style.background = '#000'; 
+            feverContainer.style.display = 'none';
+            flashOverlay.style.opacity = '1';
+            setTimeout(() => {
+                flashOverlay.style.transition = 'opacity 0.8s';
+                flashOverlay.style.opacity = '0';
+            }, 50);
+            setTimeout(() => { flashOverlay.style.transition = 'none'; }, 900);
+            sounds.feverFanfare();
+        }
+
+        function endFever() {
+            isFever = false; 
+            feverValue = 0;
+            gameContainer.style.background = '#87ceeb'; 
+            feverContainer.style.display = 'block';
+        }
+
+        class WoodenBox {
+            constructor() { 
+                this.width = 50; this.boxHeight = 50; 
+                let possibleStacks = [1];
+                if (currentLevel >= 5) possibleStacks = [1, 2, 3];
+                else if (currentLevel >= 3) possibleStacks = [1, 2];
+                this.stack = possibleStacks[Math.floor(Math.random() * possibleStacks.length)];
+                this.height = this.boxHeight * this.stack;
+                this.x = canvas.width; 
+                this.y = 350 - this.height; 
+                this.speed = gameSpeed; 
+            }
+            draw() {
+                for (let i = 0; i < this.stack; i++) {
+                    const currentY = this.y + (i * this.boxHeight);
+                    ctx.fillStyle = '#8d6e63'; 
+                    ctx.fillRect(this.x, currentY, this.width, this.boxHeight);
+                    ctx.strokeStyle = '#4e342e'; ctx.lineWidth = 2;
+                    ctx.strokeRect(this.x + 5, currentY + 5, this.width - 10, this.boxHeight - 10);
+                    ctx.beginPath(); ctx.moveTo(this.x + 5, currentY + 5); ctx.lineTo(this.x + 45, currentY + 45); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(45 + this.x, currentY + 5); ctx.lineTo(this.x + 5, currentY + 45); ctx.stroke();
+                }
+            }
+            update() { if (!isCrashing) this.x -= this.speed; }
+        }
+
+        class Item {
+            constructor(isSpicy = false) {
+                this.width = 35; this.height = 35; this.x = canvas.width; this.y = 80 + Math.random() * 200;
+                this.speed = gameSpeed; this.isSpicy = isSpicy;
+            }
+            draw() {
+                ctx.save();
+                if (this.isSpicy) { 
+                    ctx.shadowBlur = 15; ctx.shadowColor = "red"; 
+                    ctx.fillStyle = '#ff1744'; 
+                } else { 
+                    ctx.fillStyle = '#f4a460'; 
+                }
+                ctx.beginPath(); ctx.arc(this.x + 17, this.y + 17, 17, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = this.isSpicy ? '#212121' : '#4e342e'; 
+                ctx.beginPath(); ctx.ellipse(this.x + 17, this.y + 12, 12, 6, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+            }
+            update() { if (!isCrashing) this.x -= this.speed; }
+        }
+
+        function startGame(e) {
+            if (e) {
+                e.stopPropagation(); 
+                e.preventDefault();
+            }
+            initAudio(); // Essential for Safari
+            if (isGameStarted) return;
+            resetState();
+            isGameStarted = true; 
+            startScreen.style.display = 'none'; 
+            hudTop.style.display = 'flex'; comboContainer.style.display = 'block'; 
+            mobileControls.style.display = 'flex'; feverContainer.style.display = 'block';
+            animate();
+        }
+
+        function backToTitle(e) {
+            if (e) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+            initAudio();
+            isGameOver = false; isGameStarted = false; endFever();
+            gameOverScreen.style.display = 'none'; startScreen.style.display = 'flex';
+            titleHighScoreEl.innerText = `BEST: ${highScore}`;
+            resetState(); drawInitialState();
+        }
+
+        function resetState() {
+            score = 0; combo = 0; isCrashing = false; crashTimer = 0; crashType = 'normal'; frameCount = 0; 
+            currentLevel = 1; gameSpeed = BASE_SPEED; feverValue = 0;
+            obstacles.length = 0; items.length = 0; notes.length = 0; flames.length = 0;
+            backgroundAssets.trees = [{x: 50}, {x: 250}, {x: 450}, {x: 650}, {x: 850}];
+            player.y = 300; player.dy = 0; player.grounded = true;
+            scoreEl.innerText = 'SCORE: 0'; levelEl.innerText = 'LEVEL 1'; comboEl.innerText = '0';
+            keys.jump = false; keys.dance = false;
+        }
+
+        function spawnEntities() {
+            if (!isGameStarted || isCrashing) return;
+            const frequency = isFever ? 15 : Math.max(40, 75 - currentLevel * 4);
+            if (frameCount % frequency === 0) {
+                if (isFever) { items.push(new Item(false)); } 
+                else {
+                    const rand = Math.random();
+                    if (rand < ITEM_SPAWN_CHANCE) { items.push(new Item(Math.random() < SPICY_CHANCE)); } 
+                    else { obstacles.push(new WoodenBox()); }
+                }
+            }
+        }
+
+        function handleLevelLogic() {
+            if (isGameStarted && !isCrashing && frameCount > 0 && frameCount % LEVEL_UP_INTERVAL === 0) {
+                currentLevel++;
+                switch(currentLevel) {
+                    case 2: gameSpeed += 1.5; break;
+                    case 4: gameSpeed += 1.5; break;
+                    case 6: gameSpeed += 1.5; break;
+                    case 7: gameSpeed = BASE_SPEED; break;
+                    case 8: gameSpeed = BASE_SPEED + 6.0; break;
+                    default: gameSpeed += 1.0; break;
+                }
+                levelEl.innerText = `LEVEL ${currentLevel}`;
+                levelUpLabel.style.display = 'block';
+                levelUpLabel.innerText = `LEVEL ${currentLevel} UP!`;
+                sounds.levelUp();
+                setTimeout(() => levelUpLabel.style.display = 'none', 1500);
+            }
+        }
+
+        function drawBackground() {
+            if (isFever) {
+                const hue = (frameCount * 5) % 360;
+                ctx.fillStyle = `hsla(${hue}, 70%, 5%, 1)`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.strokeStyle = `hsla(${(hue + 180) % 360}, 100%, 50%, 0.15)`;
+                ctx.lineWidth = 1;
+                for(let i=0; i<canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 400); ctx.stroke(); }
+                for(let i=0; i<canvas.height; i+=40) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(800, i); ctx.stroke(); }
+                ctx.fillStyle = '#111'; ctx.fillRect(0, 350, canvas.width, 50);
+                for(let i=0; i<canvas.width; i+=50) {
+                    if ((i/50 + Math.floor(frameCount/10)) % 2 === 0) {
+                        ctx.fillStyle = `hsla(${(hue + i) % 360}, 80%, 30%, 0.4)`;
+                        ctx.fillRect(i, 350, 50, 50);
+                    }
+                }
+            } else {
+                backgroundAssets.trees.forEach(t => {
+                    if (!isCrashing) t.x -= SCROLL_SPEED;
+                    if (t.x < -100) t.x = 900; 
+                    ctx.fillStyle = '#795548'; ctx.fillRect(t.x, 280, 15, 70);
+                    ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.arc(t.x + 7, 270, 30, 0, Math.PI * 2); ctx.fill();
+                });
+                ctx.fillStyle = '#8bc34a'; ctx.fillRect(0, 350, canvas.width, 50);
+            }
+        }
+
+        function drawBackLight() {
+            if (!isFever) return;
+            ctx.save();
+            const targetX = player.isDancing ? player.x + 20 + Math.sin(frameCount * 0.5) * 10 : player.x + 20;
+            const targetY = player.y + 25;
+            const sourceX = targetX - 120;
+            const sourceY = -80;
+            const hue = (frameCount * 10) % 360;
+            const gradient = ctx.createLinearGradient(sourceX, sourceY, targetX, targetY);
+            gradient.addColorStop(0, `hsla(${hue}, 100%, 90%, 0.7)`);
+            gradient.addColorStop(0.7, `hsla(${(hue + 40) % 360}, 100%, 70%, 0.3)`);
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = gradient;
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.beginPath();
+            ctx.moveTo(sourceX, sourceY);
+            ctx.lineTo(targetX - 90, 450);
+            ctx.lineTo(targetX + 90, 450);
+            ctx.closePath();
+            ctx.fill();
+            const floorGradient = ctx.createRadialGradient(targetX, 350, 0, targetX, 350, 90);
+            floorGradient.addColorStop(0, `hsla(${hue}, 100%, 80%, 0.6)`);
+            floorGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = floorGradient;
+            ctx.beginPath(); ctx.ellipse(targetX, 350, 90, 35, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+        }
+
+        function checkCollision(p, o) {
+            const actualX = p.isDancing ? p.x + Math.sin(frameCount * 0.5) * 10 : p.x;
+            const hitPadding = 5;
+            return (actualX + hitPadding < o.x + o.width && 
+                    actualX + p.width - hitPadding > o.x && 
+                    p.y + hitPadding < o.y + o.height && 
+                    p.y + p.height - hitPadding > o.y);
+        }
+
+        function addScore(baseValue) {
+            score += Math.floor(baseValue * (1 + combo / 10));
+            scoreEl.innerText = `SCORE: ${score}`;
+        }
+
+        function triggerCrash(type = 'normal') {
+            if (isCrashing || isFever) return; 
+            isCrashing = true; crashType = type; crashTimer = 60; 
+            sounds.crash(); mobileControls.style.display = 'none'; feverContainer.style.display = 'none';
+        }
+
+        function gameOver() {
+            isGameOver = true;
+            gameOverScreen.style.display = 'flex';
+            finalScoreEl.innerText = `Score: ${score}`;
+            if (score > highScore) {
+                highScore = score; localStorage.setItem('takoyaki_highscore', highScore);
+                overHighScoreEl.style.display = 'block';
+            } else { overHighScoreEl.style.display = 'none'; }
+            sounds.gameOver();
+        }
+
+        function animate() {
+            if (isGameOver || !isGameStarted) return;
+            if (isCrashing) { if (--crashTimer <= 0) { gameOver(); return; } }
+            if (isFever) { 
+                feverTimer--; sounds.discoBeat();
+                if (feverTimer <= 0) endFever();
+            }
+            handleLevelLogic();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (isCrashing) { ctx.save(); ctx.translate((Math.random()-0.5)*15, (Math.random()-0.5)*15); }
+            drawBackground(); 
+            drawBackLight();
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i]; obs.update(); obs.draw();
+                if (!isCrashing && checkCollision(player, obs)) triggerCrash('normal');
+                if (obs.x + obs.width < 0) { 
+                    obstacles.splice(i, 1); 
+                    if (!isCrashing) { combo++; comboEl.innerText = combo; addScore(30); sounds.score(); } 
+                }
+            }
+            for (let i = items.length - 1; i >= 0; i--) {
+                const itm = items[i]; itm.update(); itm.draw();
+                if (!isCrashing && checkCollision(player, itm)) {
+                    items.splice(i, 1);
+                    if (itm.isSpicy) triggerCrash('spicy');
+                    else { addScore(300); sounds.bonus(); if (!isFever) feverValue = Math.min(FEVER_MAX, feverValue + 6); }
+                } else if (itm.x + itm.width < 0) items.splice(i, 1);
+            }
+            player.update(); player.draw(); 
+            spawnEntities();
+            if (isCrashing) ctx.restore();
+            frameCount++; requestAnimationFrame(animate);
+        }
+
+        function drawInitialState() { ctx.clearRect(0, 0, canvas.width, canvas.height); drawBackground(); player.draw(); }
+        drawInitialState();
+
+        // --- Input Handling ---
+        window.addEventListener('keydown', (e) => {
+            initAudio();
+            if (!isGameStarted) return;
+            if (e.code === 'Space') { keys.dance = true; e.preventDefault(); }
+            if (e.code === 'ArrowUp' || e.code === 'KeyW') { keys.jump = true; e.preventDefault(); }
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') keys.dance = false;
+            if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.jump = false;
+        });
+        
+        danceBtn.addEventListener('touchstart', (e) => { 
+            initAudio();
+            if (isGameStarted) keys.dance = true; 
+            e.preventDefault(); 
+        }, {passive: false});
+        danceBtn.addEventListener('touchend', (e) => {
+            keys.dance = false;
+            e.preventDefault();
+        }, {passive: false});
+
+        jumpBtn.addEventListener('touchstart', (e) => { 
+            initAudio();
+            if (isGameStarted && !isCrashing) { keys.jump = true; } 
+            e.preventDefault();
+        }, {passive: false});
+        jumpBtn.addEventListener('touchend', (e) => {
+            keys.jump = false;
+            e.preventDefault();
+        }, {passive: false});
+        
+        const handleStartInput = (e) => {
+            initAudio();
+            if (e.target.closest('.ctrl-btn') || e.target.closest('.btn-start') || e.target.closest('.instruction-box')) return;
+            if (isGameStarted && !isCrashing) {
+                keys.jump = true;
+                if (e.type === 'touchstart') e.preventDefault();
+            }
+        };
+        const handleEndInput = (e) => { 
+            keys.jump = false; 
+        };
+
+        document.addEventListener('mousedown', handleStartInput);
+        document.addEventListener('mouseup', handleEndInput);
+        document.addEventListener('touchstart', handleStartInput, {passive: false});
+        document.addEventListener('touchend', handleEndInput, {passive: false});
+
     </script>
 </body>
 </html>
