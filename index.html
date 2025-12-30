@@ -221,6 +221,25 @@
             pointer-events: auto;
         }
 
+        /* 全画面表示ボタン */
+        #fullscreen-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: 2px solid white;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            pointer-events: auto;
+        }
+
         #game-over-screen { display: none; }
 
         .high-score-label {
@@ -250,7 +269,6 @@
             color: #d84315;
         }
 
-        /* Flash effect for Fever start */
         #flash-overlay {
             position: absolute;
             top: 0;
@@ -268,6 +286,11 @@
 
     <div id="game-outer">
         <div id="game-container">
+            <!-- 全画面ボタン -->
+            <button id="fullscreen-btn" onclick="toggleFullscreen()">
+                <span id="fs-icon">⛶</span> 全画面
+            </button>
+
             <!-- Flash Layer -->
             <div id="flash-overlay"></div>
             
@@ -346,6 +369,28 @@
         const jumpBtn = document.getElementById('jump-btn');
         const gameContainer = document.getElementById('game-container');
         const flashOverlay = document.getElementById('flash-overlay');
+
+        // --- 全画面表示の切り替え ---
+        function toggleFullscreen() {
+            const elem = document.getElementById('game-container');
+            if (!document.fullscreenElement) {
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) { // Safari/iOS
+                    elem.webkitRequestFullscreen();
+                } else if (elem.msRequestFullscreen) {
+                    elem.msRequestFullscreen();
+                }
+                document.getElementById('fs-icon').innerText = '✕';
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+                document.getElementById('fs-icon').innerText = '⛶';
+            }
+        }
 
         // --- Configuration ---
         const SPICY_CHANCE = 0.3; 
@@ -837,7 +882,7 @@
         jumpBtn.addEventListener('touchend', () => keys.jump = false);
         
         const handleStartInput = (e) => {
-            if (e.target.closest('.ctrl-btn') || e.target.closest('.btn-start') || e.target.closest('.instruction-box')) return;
+            if (e.target.closest('.ctrl-btn') || e.target.closest('.btn-start') || e.target.closest('.instruction-box') || e.target.id === 'fullscreen-btn') return;
             if (isGameStarted && !isCrashing) {
                 keys.jump = true;
                 if (e.type === 'touchstart') e.preventDefault();
