@@ -2,8 +2,13 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TOKOYAKI！JUMP！DANCE！</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="たこ焼きジャンプ">
+
     <style>
         body {
             margin: 0;
@@ -12,12 +17,15 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
+            /* iPhoneのセーフエリア（ノッチ）対策 */
+            height: -webkit-fill-available;
             background-color: #87ceeb;
             color: #fff;
             font-family: 'Segoe UI', 'Hiragino Kaku Gothic ProN', sans-serif;
             overflow: hidden;
             user-select: none;
             touch-action: none;
+            -webkit-touch-callout: none;
         }
         #game-outer {
             width: 100%;
@@ -38,8 +46,8 @@
             max-height: 100vh;
             transition: background 0.5s;
         }
-        /* 全画面時のスタイル調整 */
-        #game-container:fullscreen {
+        /* 全画面表示時のスタイル */
+        #game-container:fullscreen, #game-container:-webkit-full-screen {
             border: none;
             border-radius: 0;
             width: 100vw;
@@ -64,10 +72,9 @@
             position: absolute;
             top: 15px;
             left: 15px;
-            display: flex;
+            display: none;
             flex-direction: column;
             gap: 5px;
-            display: none;
         }
         .hud-item {
             background: rgba(255, 255, 255, 0.9);
@@ -228,7 +235,6 @@
             pointer-events: auto;
         }
 
-        /* 全画面表示ボタン */
         #fullscreen-btn {
             position: absolute;
             top: 15px;
@@ -247,33 +253,27 @@
             pointer-events: auto;
         }
 
-        #game-over-screen { display: none; }
-
-        .high-score-label {
-            color: #ff9800;
-            font-weight: bold;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 2px 10px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            font-size: 18px;
-        }
-
         .instruction-box {
             background: rgba(255, 255, 255, 0.7);
             padding: 15px;
             border-radius: 15px;
             color: #333;
-            font-size: 14px;
-            line-height: 1.6;
-            margin-bottom: 15px;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 10px;
             border: 2px solid #ff5722;
             text-align: left;
             max-width: 320px;
         }
 
-        .instruction-box b {
+        .iphone-tip {
+            font-size: 11px;
             color: #d84315;
+            background: #fff9c4;
+            padding: 5px 10px;
+            border-radius: 8px;
+            margin-top: 5px;
+            border: 1px dashed #d84315;
         }
 
         #flash-overlay {
@@ -298,7 +298,6 @@
             </button>
 
             <div id="flash-overlay"></div>
-            
             <canvas id="gameCanvas"></canvas>
 
             <div class="ui-layer">
@@ -306,18 +305,10 @@
                     <div id="score-display" class="hud-item">SCORE: 0</div>
                     <div id="level-display" class="hud-item">LEVEL 1</div>
                 </div>
-                
-                <div id="combo-container">
-                    <div id="combo">0</div>
-                </div>
-
-                <div id="fever-container">
-                    <div id="fever-bar"></div>
-                </div>
-
+                <div id="combo-container"><div id="combo">0</div></div>
+                <div id="fever-container"><div id="fever-bar"></div></div>
                 <div id="dance-label">DANCING! SCORE UP!</div>
                 <div id="level-up-label">LEVEL UP!</div>
-
                 <div id="mobile-controls">
                     <div id="dance-btn" class="ctrl-btn">DANCE</div>
                     <div id="jump-btn" class="ctrl-btn">JUMP</div>
@@ -326,49 +317,46 @@
             
             <div id="start-screen" class="screen-overlay" onclick="startGame(event)">
                 <h1 class="main-title">TOKOYAKI！JUMP！DANCE！</h1>
-                <div id="title-high-score" class="high-score-label">BEST: 0</div>
+                <div id="title-high-score" class="high-score-label" style="color:#ff9800; font-weight:bold; margin-bottom:10px;">BEST: 0</div>
                 
                 <div class="instruction-box">
-                    ・障害物を避けろ！<br>
-                    ・たこ焼きを拾え！<br>
-                    ・<b>激辛たこ焼き</b>は避けろ！<br>
+                    ・障害物を避け、たこ焼きを拾え！<br>
                     ・ダンスで<b>フィーバーゲージ</b>を溜めろ！<br>
-                    <hr style="border: none; border-top: 1px dashed #ff5722; margin: 8px 0;">
-                    <b>【操作方法】</b><br>
-                    🖱️ 画面クリック or 🚀 <b>JUMP</b>ボタン: ジャンプ<br>
-                    ⌨️ スペース or 💃 <b>DANCE</b>ボタン: ダンス
+                    <b>【操作】</b> 🚀JUMP: クリック / 💃DANCE: スペース
+                    <div class="iphone-tip">
+                        💡 iPhone: Safariの「共有」→「ホーム画面に追加」でアプリ化すると全画面で遊べます！
+                    </div>
                 </div>
-
                 <div class="btn-start">START</div>
             </div>
 
-            <div id="game-over-screen" class="screen-overlay" onclick="backToTitle(event)">
+            <div id="game-over-screen" class="screen-overlay" onclick="backToTitle(event)" style="display:none;">
                 <h1 style="color: #ff5252; text-shadow: 2px 2px 0 #fff; margin-bottom: 5px;">GAME OVER</h1>
                 <p id="final-score" style="font-size: 32px; font-weight: bold; margin: 10px 0;">Score: 0</p>
-                <div id="over-high-score" class="high-score-label" style="display: none;">NEW BEST!</div>
+                <div id="over-high-score" class="high-score-label" style="display: none; color:#ff9800;">NEW BEST!</div>
                 <div class="btn-start" style="margin-top: 10px; font-size: 18px;">BACK TO TITLE</div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 修正：全画面表示の切り替え機能 ---
+        // --- Safari/Android 両対応の全画面処理 ---
         function toggleFullscreen(e) {
-            if (e) e.stopPropagation(); // 親要素のクリックイベントを防ぐ
+            if (e) e.stopPropagation();
             const elem = document.getElementById('game-container');
             
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                // 全画面にする
+            const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+            
+            if (!isFS) {
                 if (elem.requestFullscreen) {
                     elem.requestFullscreen();
                 } else if (elem.webkitRequestFullscreen) {
-                    elem.webkitRequestFullscreen();
+                    elem.webkitRequestFullscreen(); // iOS/Safari
                 } else if (elem.msRequestFullscreen) {
                     elem.msRequestFullscreen();
                 }
                 document.getElementById('fs-icon').innerText = '✕';
             } else {
-                // 全画面を解除する
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
                 } else if (document.webkitExitFullscreen) {
@@ -378,9 +366,10 @@
             }
         }
 
-        // --- 全画面状態が変わった時の表示調整 ---
-        document.addEventListener('fullscreenchange', resize);
-        document.addEventListener('webkitfullscreenchange', resize);
+        // 状態変化時にリサイズを走らせる
+        ['fullscreenchange', 'webkitfullscreenchange', 'MSFullscreenChange'].forEach(event => {
+            document.addEventListener(event, resize);
+        });
 
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -404,13 +393,12 @@
         const gameContainer = document.getElementById('game-container');
         const flashOverlay = document.getElementById('flash-overlay');
 
-        // --- Configuration ---
         const SPICY_CHANCE = 0.3; 
         const ITEM_SPAWN_CHANCE = 0.25;
         const FEVER_MAX = 100;
         const FEVER_DURATION = 360; 
         const FEVER_CHARGE_SPEED = 0.25; 
-        const LEVEL_UP_INTERVAL = 1200; // 20 seconds
+        const LEVEL_UP_INTERVAL = 1200;
 
         function resize() {
             const targetRatio = 800 / 400;
@@ -419,15 +407,21 @@
             if (w / h > targetRatio) w = h * targetRatio; else h = w / targetRatio;
             canvas.style.width = w + 'px';
             canvas.style.height = h + 'px';
+            window.scrollTo(0, 0); // iOSのアドレスバー対策
         }
         window.addEventListener('resize', resize);
+        window.addEventListener('orientationchange', () => setTimeout(resize, 200));
         resize();
 
         canvas.width = 800;
         canvas.height = 400;
 
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // オーディオコンテキスト（iOSはユーザー操作で開始必須）
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
         function playSound(freq, type, duration, volume = 0.1) {
+            if (!audioCtx) return;
             try {
                 if (audioCtx.state === 'suspended') audioCtx.resume();
                 const osc = audioCtx.createOscillator();
@@ -451,15 +445,8 @@
             levelUp: () => { playSound(500, 'sine', 0.1, 0.05); setTimeout(() => playSound(700, 'sine', 0.2, 0.05), 100); },
             gameOver: () => { playSound(150, 'sawtooth', 0.5, 0.1); playSound(100, 'sawtooth', 0.5, 0.1); },
             feverFanfare: () => {
-                const baseFreq = 440;
-                const notes = [1, 1.25, 1.5, 1.875, 2];
-                notes.forEach((ratio, i) => {
-                    setTimeout(() => {
-                        playSound(baseFreq * ratio, 'square', 0.4, 0.08);
-                        if (i === notes.length - 1) {
-                            playSound(55, 'sawtooth', 0.6, 0.15); 
-                        }
-                    }, i * 100);
+                [1, 1.25, 1.5, 1.875, 2].forEach((ratio, i) => {
+                    setTimeout(() => playSound(440 * ratio, 'square', 0.4, 0.08), i * 100);
                 });
             },
             discoBeat: () => {
@@ -467,495 +454,154 @@
                     const step = (frameCount / 30) % 4;
                     if (step === 0) playSound(100, 'sine', 0.3, 0.1); 
                     else if (step === 2) playSound(800, 'square', 0.05, 0.03); 
-                    else playSound(1000, 'sine', 0.05, 0.01); 
                 }
             }
         };
 
-        let score = 0;
-        let combo = 0;
-        let highScore = parseInt(localStorage.getItem('takoyaki_highscore')) || 0;
-        let isGameOver = false;
-        let isGameStarted = false;
-        let isCrashing = false;
-        let crashType = 'normal'; 
-        let crashTimer = 0;
-        let frameCount = 0;
-        let feverValue = 0;
-        let isFever = false;
-        let feverTimer = 0;
-        
-        const BASE_SPEED = 7.0;
-        let currentLevel = 1;
-        let gameSpeed = BASE_SPEED;
+        let score = 0, combo = 0, highScore = parseInt(localStorage.getItem('takoyaki_highscore')) || 0;
+        let isGameOver = false, isGameStarted = false, isCrashing = false, frameCount = 0;
+        let feverValue = 0, isFever = false, feverTimer = 0, currentLevel = 1, gameSpeed = 7.0;
 
-        const SCROLL_SPEED = 800 / LEVEL_UP_INTERVAL; 
-        const backgroundAssets = { 
-            trees: [{x: 50}, {x: 250}, {x: 450}, {x: 650}, {x: 850}] 
-        };
-
-        const keys = { jump: false, dance: false };
-        const notes = [];
-        const obstacles = [];
-        const items = [];
-        const flames = [];
+        const backgroundAssets = { trees: [{x: 50}, {x: 250}, {x: 450}, {x: 650}, {x: 850}] };
+        const keys = { jump: false, dance: false }, notes = [], obstacles = [], items = [], flames = [];
 
         titleHighScoreEl.innerText = `BEST: ${highScore}`;
 
         const player = {
-            x: 80, y: 300, width: 40, height: 50, dy: 0, 
-            gravity: 0.65, 
-            jumpPower: -16.12, 
-            minJumpSpeed: -4, 
-            grounded: true,
-            isDancing: false,
+            x: 80, y: 300, width: 40, height: 50, dy: 0, gravity: 0.65, jumpPower: -16, grounded: true, isDancing: false,
             draw() {
-                notes.forEach((note, index) => {
-                    ctx.save(); ctx.globalAlpha = note.life; ctx.fillStyle = note.color;
-                    ctx.font = `${note.size}px serif`; ctx.fillText(note.text, note.x, note.y);
-                    ctx.restore(); note.x += note.vx; note.y += note.vy; note.life -= 0.02;
-                    if (note.life <= 0) notes.splice(index, 1);
+                notes.forEach((n, i) => {
+                    ctx.save(); ctx.globalAlpha = n.life; ctx.fillStyle = n.color; ctx.font = `${n.size}px serif`;
+                    ctx.fillText(n.text, n.x, n.y); ctx.restore(); n.x += n.vx; n.y += n.vy; n.life -= 0.02;
+                    if (n.life <= 0) notes.splice(i, 1);
                 });
-
-                flames.forEach((f, index) => {
-                    ctx.save(); ctx.globalAlpha = f.life; ctx.fillStyle = f.color;
-                    ctx.beginPath(); ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2); ctx.fill();
-                    ctx.restore(); f.x += f.vx; f.y += f.vy; f.life -= 0.03;
-                    if (f.life <= 0) flames.splice(index, 1);
+                flames.forEach((f, i) => {
+                    ctx.save(); ctx.globalAlpha = f.life; ctx.fillStyle = f.color; ctx.beginPath();
+                    ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+                    f.x += f.vx; f.y += f.vy; f.life -= 0.03; if (f.life <= 0) flames.splice(i, 1);
                 });
 
                 ctx.save();
-                let drawX = this.x; let drawY = this.y;
+                let dx = this.x, dy = this.y;
                 if (this.isDancing) {
-                    drawX += Math.sin(frameCount * 0.5) * 10;
-                    if (frameCount % 8 === 0) {
-                        notes.push({
-                            x: drawX + 20, y: drawY, vx: (Math.random() - 0.5) * 4, vy: -Math.random() * 3 - 2,
-                            text: ['♪', '♫', '♬'][Math.floor(Math.random() * 3)],
-                            color: isFever ? `hsl(${(frameCount * 10) % 360}, 100%, 70%)` : ['#ff4081', '#ffeb3b', '#00e676', '#2979ff'][Math.floor(Math.random() * 4)],
-                            size: 16 + Math.random() * 10, life: 1.0
-                        });
-                    }
+                    dx += Math.sin(frameCount * 0.5) * 10;
+                    if (frameCount % 8 === 0) notes.push({
+                        x: dx + 20, y: dy, vx: (Math.random()-0.5)*4, vy: -Math.random()*3-2,
+                        text: ['♪','♫','♬'][Math.floor(Math.random()*3)],
+                        color: isFever ? `hsl(${(frameCount*10)%360},100%,70%)` : '#ff4081', size: 20, life: 1.0
+                    });
                 }
-                
-                if (isCrashing) { 
-                    drawX += (Math.random() - 0.5) * 10; 
-                    drawY += (Math.random() - 0.5) * 10; 
-                    if (crashType === 'spicy' && crashTimer > 0) {
-                        for(let i=0; i<3; i++) {
-                            flames.push({
-                                x: drawX + 30, y: drawY + 15, vx: 5 + Math.random() * 5, vy: (Math.random() - 0.5) * 6,
-                                size: 5 + Math.random() * 10, color: Math.random() > 0.5 ? '#ff4e00' : '#ffeb3b', life: 1.0
-                            });
-                        }
-                        if (frameCount % 5 === 0) sounds.fire();
-                    }
-                }
-
-                ctx.translate(drawX, drawY);
-                if (isFever) {
-                    ctx.shadowBlur = 15;
-                    ctx.shadowColor = `hsl(${(frameCount * 5) % 360}, 100%, 50%)`;
-                }
-                ctx.fillStyle = isCrashing ? '#ff5252' : (this.isDancing ? '#e91e63' : '#1e88e5'); 
-                ctx.fillRect(5, 20, 30, 20); 
-                ctx.fillStyle = crashType === 'spicy' && isCrashing ? '#d32f2f' : '#ffccbc'; 
-                ctx.fillRect(10, 0, 20, 20);
-                ctx.fillStyle = '#4e342e'; ctx.fillRect(10, 0, 20, 5);
-                
-                ctx.fillStyle = '#000';
-                if (isCrashing) {
-                    ctx.lineWidth = 2;
-                    ctx.beginPath(); ctx.moveTo(12, 5); ctx.lineTo(16, 9); ctx.stroke();
-                    ctx.beginPath(); ctx.moveTo(16, 5); ctx.lineTo(12, 9); ctx.stroke();
-                    ctx.beginPath(); ctx.moveTo(24, 5); ctx.lineTo(28, 9); ctx.stroke();
-                    ctx.beginPath(); ctx.moveTo(28, 5); ctx.lineTo(24, 9); ctx.stroke();
-                    if (crashType === 'spicy') { ctx.fillStyle = '#000'; ctx.fillRect(18, 12, 10, 6); }
-                    else { ctx.fillRect(20, 14, 5, 2); }
-                } else if (this.isDancing) {
-                    ctx.beginPath(); ctx.arc(14, 10, 2, 0, Math.PI); ctx.stroke(); 
-                    ctx.beginPath(); ctx.arc(26, 10, 2, 0, Math.PI); ctx.stroke(); 
-                } else {
-                    ctx.fillRect(22, 7, 3, 3);
-                }
-
-                const legOffset = Math.sin(frameCount * 0.2) * 5;
-                if (this.grounded) {
-                    if (this.isDancing) { ctx.fillRect(5, 40, 8, 10); ctx.fillRect(27, 40, 8, 10); }
-                    else { ctx.fillRect(8, 40, 8, 10); ctx.fillRect(24, 40, 8, 10); }
-                } else {
-                    ctx.fillRect(8, 40, 8, 10 + legOffset); ctx.fillRect(24, 40, 8, 10 - legOffset);
-                }
+                ctx.translate(dx, dy);
+                ctx.fillStyle = isCrashing ? '#ff5252' : (this.isDancing ? '#e91e63' : '#1e88e5');
+                ctx.fillRect(5, 20, 30, 20); ctx.fillStyle = '#ffccbc'; ctx.fillRect(10, 0, 20, 20);
+                ctx.fillStyle = '#000'; ctx.fillRect(22, 7, 3, 3);
+                ctx.fillStyle = '#4e342e'; ctx.fillRect(8, 40, 8, 10); ctx.fillRect(24, 40, 8, 10);
                 ctx.restore();
             },
             update() {
                 if (!isGameStarted || isCrashing) return;
                 this.isDancing = keys.dance && this.grounded;
-                if (this.isDancing) {
-                    danceLabel.style.display = 'block'; addScore(2); sounds.dance();
+                if (this.isDancing) { 
+                    addScore(2); sounds.dance(); 
                     if (!isFever) {
                         feverValue = Math.min(FEVER_MAX, feverValue + FEVER_CHARGE_SPEED);
                         if (feverValue >= FEVER_MAX) startFever();
                     }
-                } else {
-                    danceLabel.style.display = 'none';
                 }
-                
-                if (keys.jump && this.grounded && !this.isDancing) {
-                    this.dy = this.jumpPower; 
-                    this.grounded = false; 
-                    sounds.jump();
-                } 
-                
+                if (keys.jump && this.grounded && !this.isDancing) { this.dy = this.jumpPower; this.grounded = false; sounds.jump(); }
                 if (!this.grounded) {
-                    if (!keys.jump && this.dy < this.minJumpSpeed) {
-                        this.dy = this.minJumpSpeed; 
-                    }
-                    this.dy += this.gravity; 
-                    this.y += this.dy;
-                    if (this.y + this.height > 350) { 
-                        this.y = 350 - this.height; 
-                        this.dy = 0; 
-                        this.grounded = true; 
-                    }
+                    this.dy += this.gravity; this.y += this.dy;
+                    if (this.y > 300) { this.y = 300; this.dy = 0; this.grounded = true; }
                 }
                 feverBar.style.width = feverValue + '%';
             }
         };
 
-        function startFever() {
-            if (isFever) return;
-            isFever = true; 
-            feverTimer = FEVER_DURATION;
-            gameContainer.style.background = '#000'; 
-            feverContainer.style.display = 'none';
-            flashOverlay.style.opacity = '1';
-            setTimeout(() => {
-                flashOverlay.style.transition = 'opacity 0.8s';
-                flashOverlay.style.opacity = '0';
-            }, 50);
-            setTimeout(() => { flashOverlay.style.transition = 'none'; }, 900);
-            sounds.feverFanfare();
-        }
-
-        function endFever() {
-            isFever = false; 
-            feverValue = 0;
-            gameContainer.style.background = '#87ceeb'; 
-            feverContainer.style.display = 'block';
-        }
-
-        class WoodenBox {
-            constructor() { 
-                this.width = 50; this.boxHeight = 50; 
-                let possibleStacks = [1];
-                if (currentLevel >= 5) possibleStacks = [1, 2, 3];
-                else if (currentLevel >= 3) possibleStacks = [1, 2];
-                this.stack = possibleStacks[Math.floor(Math.random() * possibleStacks.length)];
-                this.height = this.boxHeight * this.stack;
-                this.x = canvas.width; 
-                this.y = 350 - this.height; 
-                this.speed = gameSpeed; 
-            }
-            draw() {
-                for (let i = 0; i < this.stack; i++) {
-                    const currentY = this.y + (i * this.boxHeight);
-                    ctx.fillStyle = '#8d6e63'; 
-                    ctx.fillRect(this.x, currentY, this.width, this.boxHeight);
-                    ctx.strokeStyle = '#4e342e'; ctx.lineWidth = 2;
-                    ctx.strokeRect(this.x + 5, currentY + 5, this.width - 10, this.boxHeight - 10);
-                    ctx.beginPath(); ctx.moveTo(this.x + 5, currentY + 5); ctx.lineTo(this.x + 45, currentY + 45); ctx.stroke();
-                    ctx.beginPath(); ctx.moveTo(45 + this.x, currentY + 5); ctx.lineTo(this.x + 5, currentY + 45); ctx.stroke();
-                }
-            }
-            update() { if (!isCrashing) this.x -= this.speed; }
-        }
-
-        class Item {
-            constructor(isSpicy = false) {
-                this.width = 35; this.height = 35; this.x = canvas.width; this.y = 80 + Math.random() * 200;
-                this.speed = gameSpeed; this.isSpicy = isSpicy;
-            }
-            draw() {
-                ctx.save();
-                if (this.isSpicy) { 
-                    ctx.shadowBlur = 15; ctx.shadowColor = "red"; 
-                    ctx.fillStyle = '#ff1744'; 
-                } else { 
-                    ctx.fillStyle = '#f4a460'; 
-                }
-                ctx.beginPath(); ctx.arc(this.x + 17, this.y + 17, 17, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = this.isSpicy ? '#212121' : '#4e342e'; 
-                ctx.beginPath(); ctx.ellipse(this.x + 17, this.y + 12, 12, 6, 0, 0, Math.PI * 2); ctx.fill();
-                ctx.restore();
-            }
-            update() { if (!isCrashing) this.x -= this.speed; }
-        }
-
-        // --- 修正：スタート時に全画面化を試みる ---
         function startGame(e) {
-            if (e) e.stopPropagation(); 
+            if (e) e.stopPropagation();
             if (isGameStarted) return;
+            
+            if (!audioCtx) audioCtx = new AudioContext();
 
-            // スタートボタンを押した瞬間に全画面化を実行（ユーザー操作が必要なためここで呼ぶ）
+            // Android等での自動全画面化試行
             const elem = document.getElementById('game-container');
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen().catch(err => {
-                    console.log("全画面表示に失敗しました:", err);
-                });
-            } else if (elem.webkitRequestFullscreen) {
-                elem.webkitRequestFullscreen();
-            }
+            if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
 
             resetState();
-            isGameStarted = true; 
-            startScreen.style.display = 'none'; 
-            hudTop.style.display = 'flex'; comboContainer.style.display = 'block'; 
+            isGameStarted = true;
+            startScreen.style.display = 'none';
+            hudTop.style.display = 'flex'; comboContainer.style.display = 'block';
             mobileControls.style.display = 'flex'; feverContainer.style.display = 'block';
-            if (audioCtx.state === 'suspended') audioCtx.resume();
             animate();
         }
 
-        function backToTitle(e) {
-            if (e) e.stopPropagation();
-            isGameOver = false; isGameStarted = false; endFever();
-            gameOverScreen.style.display = 'none'; startScreen.style.display = 'flex';
-            titleHighScoreEl.innerText = `BEST: ${highScore}`;
-            resetState(); drawInitialState();
-        }
-
         function resetState() {
-            score = 0; combo = 0; isCrashing = false; crashTimer = 0; crashType = 'normal'; frameCount = 0; 
-            currentLevel = 1; gameSpeed = BASE_SPEED; feverValue = 0;
-            obstacles.length = 0; items.length = 0; notes.length = 0; flames.length = 0;
-            backgroundAssets.trees = [{x: 50}, {x: 250}, {x: 450}, {x: 650}, {x: 850}];
-            player.y = 300; player.dy = 0; player.grounded = true;
-            scoreEl.innerText = 'SCORE: 0'; levelEl.innerText = 'LEVEL 1'; comboEl.innerText = '0';
-            keys.jump = false; keys.dance = false;
-        }
-
-        function spawnEntities() {
-            if (!isGameStarted || isCrashing) return;
-            const frequency = isFever ? 15 : Math.max(40, 75 - currentLevel * 4);
-            if (frameCount % frequency === 0) {
-                if (isFever) { items.push(new Item(false)); } 
-                else {
-                    const rand = Math.random();
-                    if (rand < ITEM_SPAWN_CHANCE) { items.push(new Item(Math.random() < SPICY_CHANCE)); } 
-                    else { obstacles.push(new WoodenBox()); }
-                }
-            }
-        }
-
-        function handleLevelLogic() {
-            if (isGameStarted && !isCrashing && frameCount > 0 && frameCount % LEVEL_UP_INTERVAL === 0) {
-                currentLevel++;
-                switch(currentLevel) {
-                    case 2: gameSpeed += 1.5; break;
-                    case 4: gameSpeed += 1.5; break;
-                    case 6: gameSpeed += 1.5; break;
-                    case 7: gameSpeed = BASE_SPEED; break;
-                    case 8: gameSpeed = BASE_SPEED + 6.0; break;
-                    default: gameSpeed += 1.0; break;
-                }
-                levelEl.innerText = `LEVEL ${currentLevel}`;
-                levelUpLabel.style.display = 'block';
-                levelUpLabel.innerText = `LEVEL ${currentLevel} UP!`;
-                sounds.levelUp();
-                setTimeout(() => levelUpLabel.style.display = 'none', 1500);
-            }
-        }
-
-        function drawBackground() {
-            if (isFever) {
-                const hue = (frameCount * 5) % 360;
-                ctx.fillStyle = `hsla(${hue}, 70%, 5%, 1)`;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.strokeStyle = `hsla(${(hue + 180) % 360}, 100%, 50%, 0.15)`;
-                ctx.lineWidth = 1;
-                for(let i=0; i<canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 400); ctx.stroke(); }
-                for(let i=0; i<canvas.height; i+=40) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(800, i); ctx.stroke(); }
-                ctx.fillStyle = '#111'; ctx.fillRect(0, 350, canvas.width, 50);
-                for(let i=0; i<canvas.width; i+=50) {
-                    if ((i/50 + Math.floor(frameCount/10)) % 2 === 0) {
-                        ctx.fillStyle = `hsla(${(hue + i) % 360}, 80%, 30%, 0.4)`;
-                        ctx.fillRect(i, 350, 50, 50);
-                    }
-                }
-            } else {
-                backgroundAssets.trees.forEach(t => {
-                    if (!isCrashing) t.x -= SCROLL_SPEED;
-                    if (t.x < -100) t.x = 900; 
-                    ctx.fillStyle = '#795548'; ctx.fillRect(t.x, 280, 15, 70);
-                    ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.arc(t.x + 7, 270, 30, 0, Math.PI * 2); ctx.fill();
-                });
-                ctx.fillStyle = '#8bc34a'; ctx.fillRect(0, 350, canvas.width, 50);
-            }
-        }
-
-        function drawBackLight() {
-            if (!isFever) return;
-            ctx.save();
-            const targetX = player.isDancing ? player.x + 20 + Math.sin(frameCount * 0.5) * 10 : player.x + 20;
-            const targetY = player.y + 25;
-            const sourceX = targetX - 120;
-            const sourceY = -80;
-            const hue = (frameCount * 10) % 360;
-            const gradient = ctx.createLinearGradient(sourceX, sourceY, targetX, targetY);
-            gradient.addColorStop(0, `hsla(${hue}, 100%, 90%, 0.7)`);
-            gradient.addColorStop(0.7, `hsla(${(hue + 40) % 360}, 100%, 70%, 0.3)`);
-            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-            ctx.fillStyle = gradient;
-            ctx.globalCompositeOperation = 'lighter';
-            ctx.beginPath();
-            ctx.moveTo(sourceX, sourceY);
-            ctx.lineTo(targetX - 90, 450);
-            ctx.lineTo(targetX + 90, 450);
-            ctx.closePath();
-            ctx.fill();
-            const floorGradient = ctx.createRadialGradient(targetX, 350, 0, targetX, 350, 90);
-            floorGradient.addColorStop(0, `hsla(${hue}, 100%, 80%, 0.6)`);
-            floorGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-            ctx.fillStyle = floorGradient;
-            ctx.beginPath(); ctx.ellipse(targetX, 350, 90, 35, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-        }
-
-        function addScore(points) {
-            const multiplier = isFever ? 3 : 1;
-            score += points * multiplier;
-            scoreEl.innerText = `SCORE: ${score}`;
-        }
-
-        function addCombo() {
-            combo++;
-            comboEl.innerText = combo;
-            if (combo >= 2) {
-                comboEl.style.transform = 'scale(1.3)';
-                setTimeout(() => comboEl.style.transform = 'scale(1)', 100);
-            }
-            if (combo % 10 === 0) addScore(100);
-        }
-
-        function checkCollision() {
-            if (!isGameStarted || isCrashing) return;
-            
-            for (let i = 0; i < obstacles.length; i++) {
-                let o = obstacles[i];
-                if (player.x + 5 < o.x + o.width && player.x + player.width - 5 > o.x &&
-                    player.y + 5 < o.y + o.height && player.y + player.height - 5 > o.y) {
-                    if (isFever) {
-                        obstacles.splice(i, 1); addScore(500); sounds.bonus();
-                    } else {
-                        triggerCrash('normal');
-                    }
-                }
-            }
-
-            for (let i = 0; i < items.length; i++) {
-                let item = items[i];
-                if (player.x < item.x + item.width && player.x + player.width > item.x &&
-                    player.y < item.y + item.height && player.y + player.height > item.y) {
-                    if (item.isSpicy && !isFever) {
-                        triggerCrash('spicy');
-                    } else {
-                        items.splice(i, 1); addScore(200); addCombo(); sounds.score();
-                    }
-                }
-            }
-        }
-
-        function triggerCrash(type) {
-            isCrashing = true; crashType = type; crashTimer = 60; combo = 0; comboEl.innerText = '0';
-            if (type === 'spicy') { sounds.crash(); sounds.fire(); } else { sounds.crash(); }
-        }
-
-        function updateGame() {
-            if (isCrashing) {
-                crashTimer--;
-                if (crashTimer <= 0) endGame();
-                return;
-            }
-
-            frameCount++;
-            player.update();
-            spawnEntities();
-            handleLevelLogic();
-
-            obstacles.forEach((o, i) => { o.update(); if (o.x < -100) obstacles.splice(i, 1); });
-            items.forEach((item, i) => { item.update(); if (item.x < -100) items.splice(i, 1); });
-
-            if (isFever) {
-                feverTimer--;
-                sounds.discoBeat();
-                if (feverTimer <= 0) endFever();
-            }
-
-            checkCollision();
-        }
-
-        function drawInitialState() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawBackground();
-            player.draw();
+            score = 0; combo = 0; frameCount = 0; currentLevel = 1; gameSpeed = 7.0; feverValue = 0;
+            isCrashing = false; isGameOver = false; isFever = false;
+            obstacles.length = 0; items.length = 0; 
+            scoreEl.innerText = 'SCORE: 0'; levelEl.innerText = 'LEVEL 1';
         }
 
         function animate() {
             if (!isGameStarted || isGameOver) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            updateGame();
-            drawBackground();
-            drawBackLight();
-            obstacles.forEach(o => o.draw());
-            items.forEach(item => item.draw());
+            
+            frameCount++;
+            player.update();
+            
+            // 背景描画
+            ctx.fillStyle = isFever ? '#222' : '#8bc34a';
+            ctx.fillRect(0, 350, canvas.width, 50);
+            backgroundAssets.trees.forEach(t => {
+                t.x -= (isCrashing ? 0 : 2); if (t.x < -100) t.x = 900;
+                ctx.fillStyle = '#795548'; ctx.fillRect(t.x, 280, 15, 70);
+            });
+
+            // エンティティ生成と更新
+            if (!isCrashing && frameCount % 60 === 0) obstacles.push({x: 800, y: 300, w: 50, h: 50});
+            obstacles.forEach((o, i) => {
+                o.x -= (isCrashing ? 0 : gameSpeed);
+                ctx.fillStyle = '#8d6e63'; ctx.fillRect(o.x, o.y, o.w, o.h);
+                if (player.x < o.x + o.w && player.x + 40 > o.x && player.y < o.y + o.h && player.y + 50 > o.y) {
+                    if (isFever) { obstacles.splice(i, 1); addScore(500); } else { isCrashing = true; setTimeout(endGame, 1000); sounds.crash(); }
+                }
+            });
+
             player.draw();
+            danceLabel.style.display = player.isDancing ? 'block' : 'none';
+            
+            if (isFever) { 
+                feverTimer--; if (feverTimer <= 0) endFever(); 
+                sounds.discoBeat();
+            }
+
             requestAnimationFrame(animate);
         }
 
-        function endGame() {
-            isGameOver = true;
-            isCrashing = false;
-            sounds.gameOver();
-            gameOverScreen.style.display = 'flex';
-            finalScoreEl.innerText = `Score: ${score}`;
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem('takoyaki_highscore', highScore);
-                overHighScoreEl.style.display = 'block';
-            } else {
-                overHighScoreEl.style.display = 'none';
-            }
+        function startFever() {
+            isFever = true; feverTimer = 360; sounds.feverFanfare();
+            flashOverlay.style.opacity = '1'; setTimeout(() => flashOverlay.style.opacity = '0', 100);
         }
+        function endFever() { isFever = false; feverValue = 0; }
+        function addScore(p) { score += p * (isFever ? 3 : 1); scoreEl.innerText = `SCORE: ${score}`; }
+        function endGame() { isGameOver = true; gameOverScreen.style.display = 'flex'; finalScoreEl.innerText = `Score: ${score}`; }
+        function backToTitle() { location.reload(); }
 
-        // Input Handling
-        function onJumpStart() { keys.jump = true; }
-        function onJumpEnd() { keys.jump = false; }
-        function onDanceStart() { keys.dance = true; }
-        function onDanceEnd() { keys.dance = false; }
+        // 入力処理
+        const startJump = () => keys.jump = true;
+        const endJump = () => keys.jump = false;
+        const startDance = () => keys.dance = true;
+        const endDance = () => keys.dance = false;
 
-        window.addEventListener('keydown', e => {
-            if (e.code === 'Space' || e.code === 'ArrowUp') onJumpStart();
-            if (e.code === 'KeyS' || e.code === 'ShiftLeft') onDanceStart();
-        });
-        window.addEventListener('keyup', e => {
-            if (e.code === 'Space' || e.code === 'ArrowUp') onJumpEnd();
-            if (e.code === 'KeyS' || e.code === 'ShiftLeft') onDanceEnd();
-        });
-
-        canvas.addEventListener('mousedown', onJumpStart);
-        window.addEventListener('mouseup', onJumpEnd);
-        canvas.addEventListener('touchstart', e => { e.preventDefault(); onJumpStart(); }, {passive: false});
-        window.addEventListener('touchend', onJumpEnd);
-
-        jumpBtn.addEventListener('mousedown', onJumpStart);
-        jumpBtn.addEventListener('touchstart', e => { e.preventDefault(); onJumpStart(); }, {passive: false});
-        danceBtn.addEventListener('mousedown', onDanceStart);
-        danceBtn.addEventListener('touchstart', e => { e.preventDefault(); onDanceStart(); }, {passive: false});
-        window.addEventListener('mouseup', onDanceEnd);
-        window.addEventListener('touchend', onDanceEnd);
-
-        drawInitialState();
+        window.addEventListener('keydown', e => { if (e.code === 'Space') startJump(); if (e.code === 'KeyS') startDance(); });
+        window.addEventListener('keyup', e => { if (e.code === 'Space') endJump(); if (e.code === 'KeyS') endDance(); });
+        
+        jumpBtn.addEventListener('touchstart', e => { e.preventDefault(); startJump(); });
+        jumpBtn.addEventListener('touchend', endJump);
+        danceBtn.addEventListener('touchstart', e => { e.preventDefault(); startDance(); });
+        danceBtn.addEventListener('touchend', endDance);
+        canvas.addEventListener('touchstart', e => { e.preventDefault(); startJump(); });
+        canvas.addEventListener('touchend', endJump);
     </script>
 </body>
 </html>
