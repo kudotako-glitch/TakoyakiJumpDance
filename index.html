@@ -5,20 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TOKOYAKI！JUMP！DANCE！</title>
     <style>
+        :root {
+            --app-height: 100%;
+        }
         body {
             margin: 0;
             padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            /* iOS Safari 100vh fix */
-            height: 100dvh;
+            /* iPhone Safari等のメニューバーを考慮した動的な高さ設定 */
+            height: 100vh;
+            height: 100dvh; 
             background-color: #87ceeb;
             color: #fff;
-            font-family: 'Segoe UI', 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', sans-serif;
+            font-family: 'Segoe UI', 'Hiragino Kaku Gothic ProN', sans-serif;
             overflow: hidden;
             user-select: none;
-            -webkit-user-select: none;
             touch-action: none;
         }
         #game-outer {
@@ -28,6 +31,8 @@
             justify-content: center;
             align-items: center;
             position: relative;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            box-sizing: border-box;
         }
         #game-container {
             position: relative;
@@ -36,17 +41,20 @@
             overflow: hidden;
             border: 4px solid #fff;
             background: #87ceeb;
-            max-width: 100vw;
-            max-height: 100dvh;
+            max-width: 100%;
+            max-height: 100%;
+            aspect-ratio: 2 / 1; /* ゲームの基準アスペクト比 */
             transition: background 0.5s;
-            /* Hardware acceleration for Safari */
-            transform: translateZ(0);
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         canvas {
             display: block;
             background: transparent;
             max-width: 100%;
-            height: auto;
+            max-height: 100%;
+            object-fit: contain;
             cursor: pointer;
         }
         .ui-layer {
@@ -59,21 +67,23 @@
         }
         #hud-top {
             position: absolute;
-            top: 15px;
-            left: 15px;
+            top: 10px;
+            left: 10px;
             display: flex;
             flex-direction: column;
             gap: 5px;
             display: none;
+            z-index: 20;
         }
         .hud-item {
             background: rgba(255, 255, 255, 0.9);
-            padding: 5px 15px;
+            padding: 4px 12px;
             border-radius: 20px;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             color: #2e7d32;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            white-space: nowrap;
         }
         #level-display {
             color: #d84315;
@@ -81,16 +91,16 @@
         }
         #fever-container {
             position: absolute;
-            top: 70px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 200px;
-            height: 12px;
+            top: 10px;
+            right: 10px;
+            width: 120px;
+            height: 10px;
             background: rgba(0,0,0,0.3);
             border-radius: 6px;
             border: 2px solid #fff;
             overflow: hidden;
             display: none;
+            z-index: 20;
         }
         #fever-bar {
             width: 0%;
@@ -100,17 +110,18 @@
         }
         #dance-label {
             position: absolute;
-            top: 90px;
+            top: 60px;
             left: 50%;
             transform: translateX(-50%);
             background: #ff4081;
             color: white;
-            padding: 5px 15px;
+            padding: 4px 12px;
             border-radius: 10px;
             font-weight: bold;
             display: none;
             animation: pulse 0.5s infinite;
-            font-size: 14px;
+            font-size: 12px;
+            z-index: 20;
         }
         #level-up-label {
             position: absolute;
@@ -119,12 +130,12 @@
             transform: translate(-50%, -50%);
             background: rgba(255, 255, 255, 0.95);
             color: #d84315;
-            padding: 15px 30px;
+            padding: 10px 20px;
             border-radius: 30px;
             font-weight: 900;
-            font-size: 32px;
+            font-size: 24px;
             display: none;
-            z-index: 10;
+            z-index: 50;
             border: 4px solid #ffeb3b;
             box-shadow: 0 0 20px rgba(0,0,0,0.2);
         }
@@ -135,14 +146,15 @@
         }
         #combo-container {
             position: absolute;
-            top: 15px;
+            top: 10px;
             left: 50%;
             transform: translateX(-50%);
             text-align: center;
             display: none;
+            z-index: 20;
         }
         #combo {
-            font-size: 40px;
+            font-size: 32px;
             font-weight: 900;
             color: #d84315;
             text-shadow: 2px 2px 0px #fff;
@@ -150,19 +162,19 @@
         
         #mobile-controls {
             position: absolute;
-            bottom: 20px;
-            right: 20px;
+            bottom: 10px;
+            right: 10px;
             pointer-events: auto;
             display: none;
-            flex-direction: column;
-            gap: 15px;
-            align-items: center;
-            z-index: 30;
+            flex-direction: row;
+            gap: 10px;
+            align-items: flex-end;
+            z-index: 60;
         }
         .ctrl-btn {
-            width: 75px;
-            height: 75px;
-            border: 4px solid white;
+            width: 60px;
+            height: 60px;
+            border: 3px solid white;
             border-radius: 50%;
             color: white;
             font-weight: bold;
@@ -172,12 +184,11 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             cursor: pointer;
             user-select: none;
-            -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
-            font-size: 16px;
+            font-size: 12px;
         }
         #dance-btn { background: rgba(233, 30, 99, 0.8); }
-        #jump-btn { background: rgba(30, 136, 229, 0.8); width: 85px; height: 85px; }
+        #jump-btn { background: rgba(30, 136, 229, 0.8); width: 70px; height: 70px; font-size: 14px; }
 
         .screen-overlay {
             position: absolute;
@@ -187,44 +198,46 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
-            z-index: 40;
+            z-index: 100;
             cursor: pointer;
             pointer-events: auto;
+            padding: 20px;
+            box-sizing: border-box;
         }
         
         #start-screen {
-            background: linear-gradient(135deg, rgba(135, 206, 235, 0.9), rgba(224, 247, 250, 0.9));
+            background: linear-gradient(135deg, rgba(135, 206, 235, 0.95), rgba(224, 247, 250, 0.95));
         }
 
         .main-title {
-            font-size: clamp(24px, 7vw, 56px);
+            font-size: clamp(20px, 8vw, 42px);
             font-weight: 900;
             color: #ff5722;
-            text-shadow: 3px 3px 0 #fff;
-            margin-bottom: 10px;
+            text-shadow: 2px 2px 0 #fff;
+            margin: 0 0 10px 0;
             font-style: italic;
-            padding: 0 10px;
-            line-height: 1.2;
+            padding: 0 5px;
+            line-height: 1.1;
         }
 
         .btn-start {
-            padding: 10px 40px;
-            font-size: 24px;
+            padding: 8px 30px;
+            font-size: 20px;
             font-weight: bold;
             background: #ffeb3b;
             color: #d84315;
-            border: 4px solid #fff;
+            border: 3px solid #fff;
             border-radius: 50px;
-            box-shadow: 0 6px 0 #fbc02d;
-            margin-bottom: 10px;
+            box-shadow: 0 4px 0 #fbc02d;
+            margin: 5px 0;
             cursor: pointer;
             pointer-events: auto;
+            flex-shrink: 0;
         }
 
         #game-over-screen { display: none; }
@@ -235,24 +248,30 @@
             background: rgba(255, 255, 255, 0.8);
             padding: 2px 10px;
             border-radius: 10px;
-            margin-bottom: 15px;
-            font-size: 18px;
+            margin-bottom: 10px;
+            font-size: 14px;
         }
 
         .instruction-box {
-            background: rgba(255, 255, 255, 0.7);
-            padding: 15px;
-            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 15px;
+            border-radius: 12px;
             color: #333;
-            font-size: 14px;
-            line-height: 1.6;
-            margin-bottom: 15px;
+            font-size: 12px;
+            line-height: 1.4;
+            margin-bottom: 10px;
             border: 2px solid #ff5722;
             text-align: left;
-            max-width: 320px;
+            max-width: 90%;
+            max-height: 40%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
-        /* Flash effect for Fever start */
+        .instruction-box b {
+            color: #d84315;
+        }
+
         #flash-overlay {
             position: absolute;
             top: 0;
@@ -262,7 +281,7 @@
             background: white;
             opacity: 0;
             pointer-events: none;
-            z-index: 100;
+            z-index: 200;
         }
     </style>
 </head>
@@ -271,6 +290,7 @@
     <div id="game-outer">
         <div id="game-container">
             <div id="flash-overlay"></div>
+            
             <canvas id="gameCanvas"></canvas>
 
             <div class="ui-layer">
@@ -297,7 +317,7 @@
             </div>
             
             <div id="start-screen" class="screen-overlay" onclick="startGame(event)">
-                <h1 class="main-title">TOKOYAKI！JUMP！DANCE！</h1>
+                <h1 class="main-title">TOKOYAKI！<br>JUMP！DANCE！</h1>
                 <div id="title-high-score" class="high-score-label">BEST: 0</div>
                 
                 <div class="instruction-box">
@@ -305,18 +325,18 @@
                     ・たこ焼きを拾え！<br>
                     ・<b>激辛たこ焼き</b>は避けろ！<br>
                     ・ダンスで<b>フィーバーゲージ</b>を溜めろ！<br>
-                    <hr style="border: none; border-top: 1px dashed #ff5722; margin: 8px 0;">
+                    <hr style="border: none; border-top: 1px dashed #ff5722; margin: 5px 0;">
                     <b>【操作方法】</b><br>
-                    🖱️ 画面クリック or 🚀 <b>JUMP</b>ボタン: ジャンプ<br>
-                    ⌨️ スペース or 💃 <b>DANCE</b>ボタン: ダンス
+                    🖱️ 画面タップ or 🚀 <b>JUMP</b>: ジャンプ<br>
+                    💃 <b>DANCE</b>ボタン: ダンス
                 </div>
 
                 <div class="btn-start">START</div>
             </div>
 
             <div id="game-over-screen" class="screen-overlay" onclick="backToTitle(event)">
-                <h1 style="color: #ff5252; text-shadow: 2px 2px 0 #fff; margin-bottom: 5px;">GAME OVER</h1>
-                <p id="final-score" style="font-size: 32px; font-weight: bold; margin: 10px 0;">Score: 0</p>
+                <h1 style="color: #ff5252; text-shadow: 2px 2px 0 #fff; margin-bottom: 5px; font-size: 32px;">GAME OVER</h1>
+                <p id="final-score" style="font-size: 28px; font-weight: bold; margin: 10px 0;">Score: 0</p>
                 <div id="over-high-score" class="high-score-label" style="display: none;">NEW BEST!</div>
                 <div class="btn-start" style="margin-top: 10px; font-size: 18px;">BACK TO TITLE</div>
             </div>
@@ -346,42 +366,44 @@
         const gameContainer = document.getElementById('game-container');
         const flashOverlay = document.getElementById('flash-overlay');
 
-        // --- Configuration ---
         const SPICY_CHANCE = 0.3; 
         const ITEM_SPAWN_CHANCE = 0.25;
         const FEVER_MAX = 100;
         const FEVER_DURATION = 360; 
         const FEVER_CHARGE_SPEED = 0.25; 
-        const LEVEL_UP_INTERVAL = 1200; 
+        const LEVEL_UP_INTERVAL = 1200;
 
         function resize() {
+            const container = document.getElementById('game-container');
+            const outer = document.getElementById('game-outer');
+            
+            const maxWidth = outer.clientWidth - 20;
+            const maxHeight = outer.clientHeight - 20;
+            
             const targetRatio = 800 / 400;
-            let w = window.innerWidth;
-            let h = window.innerHeight;
-            if (w / h > targetRatio) w = h * targetRatio; else h = w / targetRatio;
-            canvas.style.width = w + 'px';
-            canvas.style.height = h + 'px';
+            let w = maxWidth;
+            let h = w / targetRatio;
+            
+            if (h > maxHeight) {
+                h = maxHeight;
+                w = h * targetRatio;
+            }
+            
+            container.style.width = w + 'px';
+            container.style.height = h + 'px';
         }
+        
         window.addEventListener('resize', resize);
+        window.addEventListener('orientationchange', () => setTimeout(resize, 100));
         resize();
 
         canvas.width = 800;
         canvas.height = 400;
 
-        // Safari AudioContext initialization
-        let audioCtx;
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }
-
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSound(freq, type, duration, volume = 0.1) {
             try {
-                if (!audioCtx) return;
+                if (audioCtx.state === 'suspended') audioCtx.resume();
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = type;
@@ -404,13 +426,11 @@
             gameOver: () => { playSound(150, 'sawtooth', 0.5, 0.1); playSound(100, 'sawtooth', 0.5, 0.1); },
             feverFanfare: () => {
                 const baseFreq = 440;
-                const notesNotes = [1, 1.25, 1.5, 1.875, 2];
-                notesNotes.forEach((ratio, i) => {
+                const notes = [1, 1.25, 1.5, 1.875, 2];
+                notes.forEach((ratio, i) => {
                     setTimeout(() => {
                         playSound(baseFreq * ratio, 'square', 0.4, 0.08);
-                        if (i === notesNotes.length - 1) {
-                            playSound(55, 'sawtooth', 0.6, 0.15); 
-                        }
+                        if (i === notes.length - 1) { playSound(55, 'sawtooth', 0.6, 0.15); }
                     }, i * 100);
                 });
             },
@@ -440,12 +460,9 @@
         const BASE_SPEED = 7.0;
         let currentLevel = 1;
         let gameSpeed = BASE_SPEED;
-
         const SCROLL_SPEED = 800 / LEVEL_UP_INTERVAL; 
-        const backgroundAssets = { 
-            trees: [{x: 50}, {x: 250}, {x: 450}, {x: 650}, {x: 850}] 
-        };
 
+        const backgroundAssets = { trees: [{x: 50}, {x: 250}, {x: 450}, {x: 650}, {x: 850}] };
         const keys = { jump: false, dance: false };
         const notes = [];
         const obstacles = [];
@@ -456,11 +473,7 @@
 
         const player = {
             x: 80, y: 300, width: 40, height: 50, dy: 0, 
-            gravity: 0.65, 
-            jumpPower: -16.12, 
-            minJumpSpeed: -4, 
-            grounded: true,
-            isDancing: false,
+            gravity: 0.65, jumpPower: -16.12, minJumpSpeed: -4, grounded: true, isDancing: false,
             draw() {
                 notes.forEach((note, index) => {
                     ctx.save(); ctx.globalAlpha = note.life; ctx.fillStyle = note.color;
@@ -505,10 +518,7 @@
                 }
 
                 ctx.translate(drawX, drawY);
-                if (isFever) {
-                    ctx.shadowBlur = 15;
-                    ctx.shadowColor = `hsl(${(frameCount * 5) % 360}, 100%, 50%)`;
-                }
+                if (isFever) { ctx.shadowBlur = 15; ctx.shadowColor = `hsl(${(frameCount * 5) % 360}, 100%, 50%)`; }
                 ctx.fillStyle = isCrashing ? '#ff5252' : (this.isDancing ? '#e91e63' : '#1e88e5'); 
                 ctx.fillRect(5, 20, 30, 20); 
                 ctx.fillStyle = crashType === 'spicy' && isCrashing ? '#d32f2f' : '#ffccbc'; 
@@ -549,27 +559,16 @@
                         feverValue = Math.min(FEVER_MAX, feverValue + FEVER_CHARGE_SPEED);
                         if (feverValue >= FEVER_MAX) startFever();
                     }
-                } else {
-                    danceLabel.style.display = 'none';
-                }
+                } else { danceLabel.style.display = 'none'; }
                 
                 if (keys.jump && this.grounded && !this.isDancing) {
-                    this.dy = this.jumpPower; 
-                    this.grounded = false; 
-                    sounds.jump();
+                    this.dy = this.jumpPower; this.grounded = false; sounds.jump();
                 } 
                 
                 if (!this.grounded) {
-                    if (!keys.jump && this.dy < this.minJumpSpeed) {
-                        this.dy = this.minJumpSpeed; 
-                    }
-                    this.dy += this.gravity; 
-                    this.y += this.dy;
-                    if (this.y + this.height > 350) { 
-                        this.y = 350 - this.height; 
-                        this.dy = 0; 
-                        this.grounded = true; 
-                    }
+                    if (!keys.jump && this.dy < this.minJumpSpeed) this.dy = this.minJumpSpeed; 
+                    this.dy += this.gravity; this.y += this.dy;
+                    if (this.y + this.height > 350) { this.y = 350 - this.height; this.dy = 0; this.grounded = true; }
                 }
                 feverBar.style.width = feverValue + '%';
             }
@@ -577,8 +576,7 @@
 
         function startFever() {
             if (isFever) return;
-            isFever = true; 
-            feverTimer = FEVER_DURATION;
+            isFever = true; feverTimer = FEVER_DURATION;
             gameContainer.style.background = '#000'; 
             feverContainer.style.display = 'none';
             flashOverlay.style.opacity = '1';
@@ -591,8 +589,7 @@
         }
 
         function endFever() {
-            isFever = false; 
-            feverValue = 0;
+            isFever = false; feverValue = 0;
             gameContainer.style.background = '#87ceeb'; 
             feverContainer.style.display = 'block';
         }
@@ -605,15 +602,12 @@
                 else if (currentLevel >= 3) possibleStacks = [1, 2];
                 this.stack = possibleStacks[Math.floor(Math.random() * possibleStacks.length)];
                 this.height = this.boxHeight * this.stack;
-                this.x = canvas.width; 
-                this.y = 350 - this.height; 
-                this.speed = gameSpeed; 
+                this.x = canvas.width; this.y = 350 - this.height; this.speed = gameSpeed; 
             }
             draw() {
                 for (let i = 0; i < this.stack; i++) {
                     const currentY = this.y + (i * this.boxHeight);
-                    ctx.fillStyle = '#8d6e63'; 
-                    ctx.fillRect(this.x, currentY, this.width, this.boxHeight);
+                    ctx.fillStyle = '#8d6e63'; ctx.fillRect(this.x, currentY, this.width, this.boxHeight);
                     ctx.strokeStyle = '#4e342e'; ctx.lineWidth = 2;
                     ctx.strokeRect(this.x + 5, currentY + 5, this.width - 10, this.boxHeight - 10);
                     ctx.beginPath(); ctx.moveTo(this.x + 5, currentY + 5); ctx.lineTo(this.x + 45, currentY + 45); ctx.stroke();
@@ -630,12 +624,8 @@
             }
             draw() {
                 ctx.save();
-                if (this.isSpicy) { 
-                    ctx.shadowBlur = 15; ctx.shadowColor = "red"; 
-                    ctx.fillStyle = '#ff1744'; 
-                } else { 
-                    ctx.fillStyle = '#f4a460'; 
-                }
+                if (this.isSpicy) { ctx.shadowBlur = 15; ctx.shadowColor = "red"; ctx.fillStyle = '#ff1744'; }
+                else { ctx.fillStyle = '#f4a460'; }
                 ctx.beginPath(); ctx.arc(this.x + 17, this.y + 17, 17, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = this.isSpicy ? '#212121' : '#4e342e'; 
                 ctx.beginPath(); ctx.ellipse(this.x + 17, this.y + 12, 12, 6, 0, 0, Math.PI * 2); ctx.fill();
@@ -645,26 +635,18 @@
         }
 
         function startGame(e) {
-            if (e) {
-                e.stopPropagation(); 
-                e.preventDefault();
-            }
-            initAudio(); // Essential for Safari
+            if (e) e.stopPropagation(); 
             if (isGameStarted) return;
             resetState();
-            isGameStarted = true; 
-            startScreen.style.display = 'none'; 
+            isGameStarted = true; startScreen.style.display = 'none'; 
             hudTop.style.display = 'flex'; comboContainer.style.display = 'block'; 
             mobileControls.style.display = 'flex'; feverContainer.style.display = 'block';
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             animate();
         }
 
         function backToTitle(e) {
-            if (e) {
-                e.stopPropagation();
-                e.preventDefault();
-            }
-            initAudio();
+            if (e) e.stopPropagation();
             isGameOver = false; isGameStarted = false; endFever();
             gameOverScreen.style.display = 'none'; startScreen.style.display = 'flex';
             titleHighScoreEl.innerText = `BEST: ${highScore}`;
@@ -688,8 +670,8 @@
                 if (isFever) { items.push(new Item(false)); } 
                 else {
                     const rand = Math.random();
-                    if (rand < ITEM_SPAWN_CHANCE) { items.push(new Item(Math.random() < SPICY_CHANCE)); } 
-                    else { obstacles.push(new WoodenBox()); }
+                    if (rand < ITEM_SPAWN_CHANCE) items.push(new Item(Math.random() < SPICY_CHANCE)); 
+                    else obstacles.push(new WoodenBox());
                 }
             }
         }
@@ -716,17 +698,14 @@
         function drawBackground() {
             if (isFever) {
                 const hue = (frameCount * 5) % 360;
-                ctx.fillStyle = `hsla(${hue}, 70%, 5%, 1)`;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.strokeStyle = `hsla(${(hue + 180) % 360}, 100%, 50%, 0.15)`;
-                ctx.lineWidth = 1;
+                ctx.fillStyle = `hsla(${hue}, 70%, 5%, 1)`; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.strokeStyle = `hsla(${(hue + 180) % 360}, 100%, 50%, 0.15)`; ctx.lineWidth = 1;
                 for(let i=0; i<canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 400); ctx.stroke(); }
                 for(let i=0; i<canvas.height; i+=40) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(800, i); ctx.stroke(); }
                 ctx.fillStyle = '#111'; ctx.fillRect(0, 350, canvas.width, 50);
                 for(let i=0; i<canvas.width; i+=50) {
                     if ((i/50 + Math.floor(frameCount/10)) % 2 === 0) {
-                        ctx.fillStyle = `hsla(${(hue + i) % 360}, 80%, 30%, 0.4)`;
-                        ctx.fillRect(i, 350, 50, 50);
+                        ctx.fillStyle = `hsla(${(hue + i) % 360}, 80%, 30%, 0.4)`; ctx.fillRect(i, 350, 50, 50);
                     }
                 }
             } else {
@@ -754,15 +733,9 @@
             gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
             ctx.fillStyle = gradient;
             ctx.globalCompositeOperation = 'lighter';
-            ctx.beginPath();
-            ctx.moveTo(sourceX, sourceY);
-            ctx.lineTo(targetX - 90, 450);
-            ctx.lineTo(targetX + 90, 450);
-            ctx.closePath();
-            ctx.fill();
+            ctx.beginPath(); ctx.moveTo(sourceX, sourceY); ctx.lineTo(targetX - 90, 450); ctx.lineTo(targetX + 90, 450); ctx.closePath(); ctx.fill();
             const floorGradient = ctx.createRadialGradient(targetX, 350, 0, targetX, 350, 90);
-            floorGradient.addColorStop(0, `hsla(${hue}, 100%, 80%, 0.6)`);
-            floorGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            floorGradient.addColorStop(0, `hsla(${hue}, 100%, 80%, 0.6)`); floorGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
             ctx.fillStyle = floorGradient;
             ctx.beginPath(); ctx.ellipse(targetX, 350, 90, 35, 0, 0, Math.PI * 2); ctx.fill();
             ctx.restore();
@@ -809,8 +782,7 @@
             handleLevelLogic();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (isCrashing) { ctx.save(); ctx.translate((Math.random()-0.5)*15, (Math.random()-0.5)*15); }
-            drawBackground(); 
-            drawBackLight();
+            drawBackground(); drawBackLight();
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 const obs = obstacles[i]; obs.update(); obs.draw();
                 if (!isCrashing && checkCollision(player, obs)) triggerCrash('normal');
@@ -827,8 +799,7 @@
                     else { addScore(300); sounds.bonus(); if (!isFever) feverValue = Math.min(FEVER_MAX, feverValue + 6); }
                 } else if (itm.x + itm.width < 0) items.splice(i, 1);
             }
-            player.update(); player.draw(); 
-            spawnEntities();
+            player.update(); player.draw(); spawnEntities();
             if (isCrashing) ctx.restore();
             frameCount++; requestAnimationFrame(animate);
         }
@@ -836,9 +807,7 @@
         function drawInitialState() { ctx.clearRect(0, 0, canvas.width, canvas.height); drawBackground(); player.draw(); }
         drawInitialState();
 
-        // --- Input Handling ---
         window.addEventListener('keydown', (e) => {
-            initAudio();
             if (!isGameStarted) return;
             if (e.code === 'Space') { keys.dance = true; e.preventDefault(); }
             if (e.code === 'ArrowUp' || e.code === 'KeyW') { keys.jump = true; e.preventDefault(); }
@@ -848,42 +817,24 @@
             if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.jump = false;
         });
         
-        danceBtn.addEventListener('touchstart', (e) => { 
-            initAudio();
-            if (isGameStarted) keys.dance = true; 
-            e.preventDefault(); 
-        }, {passive: false});
-        danceBtn.addEventListener('touchend', (e) => {
-            keys.dance = false;
-            e.preventDefault();
-        }, {passive: false});
-
-        jumpBtn.addEventListener('touchstart', (e) => { 
-            initAudio();
-            if (isGameStarted && !isCrashing) { keys.jump = true; } 
-            e.preventDefault();
-        }, {passive: false});
-        jumpBtn.addEventListener('touchend', (e) => {
-            keys.jump = false;
-            e.preventDefault();
-        }, {passive: false});
+        danceBtn.addEventListener('touchstart', (e) => { if (isGameStarted) keys.dance = true; e.preventDefault(); }, {passive: false});
+        danceBtn.addEventListener('touchend', () => keys.dance = false);
+        jumpBtn.addEventListener('touchstart', (e) => { if (isGameStarted && !isCrashing) { keys.jump = true; e.preventDefault(); } }, {passive: false});
+        jumpBtn.addEventListener('touchend', () => keys.jump = false);
         
         const handleStartInput = (e) => {
-            initAudio();
             if (e.target.closest('.ctrl-btn') || e.target.closest('.btn-start') || e.target.closest('.instruction-box')) return;
             if (isGameStarted && !isCrashing) {
                 keys.jump = true;
                 if (e.type === 'touchstart') e.preventDefault();
             }
         };
-        const handleEndInput = (e) => { 
-            keys.jump = false; 
-        };
+        const handleEndInput = () => { keys.jump = false; };
 
         document.addEventListener('mousedown', handleStartInput);
         document.addEventListener('mouseup', handleEndInput);
         document.addEventListener('touchstart', handleStartInput, {passive: false});
-        document.addEventListener('touchend', handleEndInput, {passive: false});
+        document.addEventListener('touchend', handleEndInput);
 
     </script>
 </body>
