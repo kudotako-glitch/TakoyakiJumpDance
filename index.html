@@ -38,6 +38,13 @@
             max-height: 100vh;
             transition: background 0.5s;
         }
+        /* 全画面時のスタイル調整 */
+        #game-container:fullscreen {
+            border: none;
+            border-radius: 0;
+            width: 100vw;
+            height: 100vh;
+        }
         canvas {
             display: block;
             background: transparent;
@@ -286,15 +293,12 @@
 
     <div id="game-outer">
         <div id="game-container">
-            <!-- 全画面ボタン -->
-            <button id="fullscreen-btn" onclick="toggleFullscreen()">
+            <button id="fullscreen-btn" onclick="toggleFullscreen(event)">
                 <span id="fs-icon">⛶</span> 全画面
             </button>
 
-            <!-- Flash Layer -->
             <div id="flash-overlay"></div>
             
-            <!-- Game Canvas -->
             <canvas id="gameCanvas"></canvas>
 
             <div class="ui-layer">
@@ -348,6 +352,36 @@
     </div>
 
     <script>
+        // --- 修正：全画面表示の切り替え機能 ---
+        function toggleFullscreen(e) {
+            if (e) e.stopPropagation(); // 親要素のクリックイベントを防ぐ
+            const elem = document.getElementById('game-container');
+            
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                // 全画面にする
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                } else if (elem.msRequestFullscreen) {
+                    elem.msRequestFullscreen();
+                }
+                document.getElementById('fs-icon').innerText = '✕';
+            } else {
+                // 全画面を解除する
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+                document.getElementById('fs-icon').innerText = '⛶';
+            }
+        }
+
+        // --- 全画面状態が変わった時の表示調整 ---
+        document.addEventListener('fullscreenchange', resize);
+        document.addEventListener('webkitfullscreenchange', resize);
+
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreEl = document.getElementById('score-display');
@@ -369,28 +403,6 @@
         const jumpBtn = document.getElementById('jump-btn');
         const gameContainer = document.getElementById('game-container');
         const flashOverlay = document.getElementById('flash-overlay');
-
-        // --- 全画面表示の切り替え ---
-        function toggleFullscreen() {
-            const elem = document.getElementById('game-container');
-            if (!document.fullscreenElement) {
-                if (elem.requestFullscreen) {
-                    elem.requestFullscreen();
-                } else if (elem.webkitRequestFullscreen) { // Safari/iOS
-                    elem.webkitRequestFullscreen();
-                } else if (elem.msRequestFullscreen) {
-                    elem.msRequestFullscreen();
-                }
-                document.getElementById('fs-icon').innerText = '✕';
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                }
-                document.getElementById('fs-icon').innerText = '⛶';
-            }
-        }
 
         // --- Configuration ---
         const SPICY_CHANCE = 0.3; 
@@ -680,9 +692,21 @@
             update() { if (!isCrashing) this.x -= this.speed; }
         }
 
+        // --- 修正：スタート時に全画面化を試みる ---
         function startGame(e) {
             if (e) e.stopPropagation(); 
             if (isGameStarted) return;
+
+            // スタートボタンを押した瞬間に全画面化を実行（ユーザー操作が必要なためここで呼ぶ）
+            const elem = document.getElementById('game-container');
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(err => {
+                    console.log("全画面表示に失敗しました:", err);
+                });
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            }
+
             resetState();
             isGameStarted = true; 
             startScreen.style.display = 'none'; 
@@ -793,108 +817,145 @@
             floorGradient.addColorStop(0, `hsla(${hue}, 100%, 80%, 0.6)`);
             floorGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
             ctx.fillStyle = floorGradient;
-            ctx.beginPath(); ctx.ellipse(targetX, 350, 90, 35, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(targetX, 350, 90, 35, 0, 0, Math.PI * 2);
+            ctx.fill();
             ctx.restore();
         }
 
-        function checkCollision(p, o) {
-            const actualX = p.isDancing ? p.x + Math.sin(frameCount * 0.5) * 10 : p.x;
-            const hitPadding = 5;
-            return (actualX + hitPadding < o.x + o.width && 
-                    actualX + p.width - hitPadding > o.x && 
-                    p.y + hitPadding < o.y + o.height && 
-                    p.y + p.height - hitPadding > o.y);
-        }
-
-        function addScore(baseValue) {
-            score += Math.floor(baseValue * (1 + combo / 10));
+        function addScore(points) {
+            const multiplier = isFever ? 3 : 1;
+            score += points * multiplier;
             scoreEl.innerText = `SCORE: ${score}`;
         }
 
-        function triggerCrash(type = 'normal') {
-            if (isCrashing || isFever) return; 
-            isCrashing = true; crashType = type; crashTimer = 60; 
-            sounds.crash(); mobileControls.style.display = 'none'; feverContainer.style.display = 'none';
+        function addCombo() {
+            combo++;
+            comboEl.innerText = combo;
+            if (combo >= 2) {
+                comboEl.style.transform = 'scale(1.3)';
+                setTimeout(() => comboEl.style.transform = 'scale(1)', 100);
+            }
+            if (combo % 10 === 0) addScore(100);
         }
 
-        function gameOver() {
-            isGameOver = true;
-            gameOverScreen.style.display = 'flex';
-            finalScoreEl.innerText = `Score: ${score}`;
-            if (score > highScore) {
-                highScore = score; localStorage.setItem('takoyaki_highscore', highScore);
-                overHighScoreEl.style.display = 'block';
-            } else { overHighScoreEl.style.display = 'none'; }
-            sounds.gameOver();
+        function checkCollision() {
+            if (!isGameStarted || isCrashing) return;
+            
+            for (let i = 0; i < obstacles.length; i++) {
+                let o = obstacles[i];
+                if (player.x + 5 < o.x + o.width && player.x + player.width - 5 > o.x &&
+                    player.y + 5 < o.y + o.height && player.y + player.height - 5 > o.y) {
+                    if (isFever) {
+                        obstacles.splice(i, 1); addScore(500); sounds.bonus();
+                    } else {
+                        triggerCrash('normal');
+                    }
+                }
+            }
+
+            for (let i = 0; i < items.length; i++) {
+                let item = items[i];
+                if (player.x < item.x + item.width && player.x + player.width > item.x &&
+                    player.y < item.y + item.height && player.y + player.height > item.y) {
+                    if (item.isSpicy && !isFever) {
+                        triggerCrash('spicy');
+                    } else {
+                        items.splice(i, 1); addScore(200); addCombo(); sounds.score();
+                    }
+                }
+            }
+        }
+
+        function triggerCrash(type) {
+            isCrashing = true; crashType = type; crashTimer = 60; combo = 0; comboEl.innerText = '0';
+            if (type === 'spicy') { sounds.crash(); sounds.fire(); } else { sounds.crash(); }
+        }
+
+        function updateGame() {
+            if (isCrashing) {
+                crashTimer--;
+                if (crashTimer <= 0) endGame();
+                return;
+            }
+
+            frameCount++;
+            player.update();
+            spawnEntities();
+            handleLevelLogic();
+
+            obstacles.forEach((o, i) => { o.update(); if (o.x < -100) obstacles.splice(i, 1); });
+            items.forEach((item, i) => { item.update(); if (item.x < -100) items.splice(i, 1); });
+
+            if (isFever) {
+                feverTimer--;
+                sounds.discoBeat();
+                if (feverTimer <= 0) endFever();
+            }
+
+            checkCollision();
+        }
+
+        function drawInitialState() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground();
+            player.draw();
         }
 
         function animate() {
-            if (isGameOver || !isGameStarted) return;
-            if (isCrashing) { if (--crashTimer <= 0) { gameOver(); return; } }
-            if (isFever) { 
-                feverTimer--; sounds.discoBeat();
-                if (feverTimer <= 0) endFever();
-            }
-            handleLevelLogic();
+            if (!isGameStarted || isGameOver) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (isCrashing) { ctx.save(); ctx.translate((Math.random()-0.5)*15, (Math.random()-0.5)*15); }
-            drawBackground(); 
+            updateGame();
+            drawBackground();
             drawBackLight();
-            for (let i = obstacles.length - 1; i >= 0; i--) {
-                const obs = obstacles[i]; obs.update(); obs.draw();
-                if (!isCrashing && checkCollision(player, obs)) triggerCrash('normal');
-                if (obs.x + obs.width < 0) { 
-                    obstacles.splice(i, 1); 
-                    if (!isCrashing) { combo++; comboEl.innerText = combo; addScore(30); sounds.score(); } 
-                }
-            }
-            for (let i = items.length - 1; i >= 0; i--) {
-                const itm = items[i]; itm.update(); itm.draw();
-                if (!isCrashing && checkCollision(player, itm)) {
-                    items.splice(i, 1);
-                    if (itm.isSpicy) triggerCrash('spicy');
-                    else { addScore(300); sounds.bonus(); if (!isFever) feverValue = Math.min(FEVER_MAX, feverValue + 6); }
-                } else if (itm.x + itm.width < 0) items.splice(i, 1);
-            }
-            player.update(); player.draw(); 
-            spawnEntities();
-            if (isCrashing) ctx.restore();
-            frameCount++; requestAnimationFrame(animate);
+            obstacles.forEach(o => o.draw());
+            items.forEach(item => item.draw());
+            player.draw();
+            requestAnimationFrame(animate);
         }
 
-        function drawInitialState() { ctx.clearRect(0, 0, canvas.width, canvas.height); drawBackground(); player.draw(); }
-        drawInitialState();
-
-        // --- Input Handling ---
-        window.addEventListener('keydown', (e) => {
-            if (!isGameStarted) return;
-            if (e.code === 'Space') { keys.dance = true; e.preventDefault(); }
-            if (e.code === 'ArrowUp' || e.code === 'KeyW') { keys.jump = true; e.preventDefault(); }
-        });
-        window.addEventListener('keyup', (e) => {
-            if (e.code === 'Space') keys.dance = false;
-            if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.jump = false;
-        });
-        
-        danceBtn.addEventListener('touchstart', (e) => { if (isGameStarted) keys.dance = true; e.preventDefault(); }, {passive: false});
-        danceBtn.addEventListener('touchend', () => keys.dance = false);
-        jumpBtn.addEventListener('touchstart', (e) => { if (isGameStarted && !isCrashing) { keys.jump = true; e.preventDefault(); } }, {passive: false});
-        jumpBtn.addEventListener('touchend', () => keys.jump = false);
-        
-        const handleStartInput = (e) => {
-            if (e.target.closest('.ctrl-btn') || e.target.closest('.btn-start') || e.target.closest('.instruction-box') || e.target.id === 'fullscreen-btn') return;
-            if (isGameStarted && !isCrashing) {
-                keys.jump = true;
-                if (e.type === 'touchstart') e.preventDefault();
+        function endGame() {
+            isGameOver = true;
+            isCrashing = false;
+            sounds.gameOver();
+            gameOverScreen.style.display = 'flex';
+            finalScoreEl.innerText = `Score: ${score}`;
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('takoyaki_highscore', highScore);
+                overHighScoreEl.style.display = 'block';
+            } else {
+                overHighScoreEl.style.display = 'none';
             }
-        };
-        const handleEndInput = () => { keys.jump = false; };
+        }
 
-        document.addEventListener('mousedown', handleStartInput);
-        document.addEventListener('mouseup', handleEndInput);
-        document.addEventListener('touchstart', handleStartInput, {passive: false});
-        document.addEventListener('touchend', handleEndInput);
+        // Input Handling
+        function onJumpStart() { keys.jump = true; }
+        function onJumpEnd() { keys.jump = false; }
+        function onDanceStart() { keys.dance = true; }
+        function onDanceEnd() { keys.dance = false; }
 
+        window.addEventListener('keydown', e => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') onJumpStart();
+            if (e.code === 'KeyS' || e.code === 'ShiftLeft') onDanceStart();
+        });
+        window.addEventListener('keyup', e => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') onJumpEnd();
+            if (e.code === 'KeyS' || e.code === 'ShiftLeft') onDanceEnd();
+        });
+
+        canvas.addEventListener('mousedown', onJumpStart);
+        window.addEventListener('mouseup', onJumpEnd);
+        canvas.addEventListener('touchstart', e => { e.preventDefault(); onJumpStart(); }, {passive: false});
+        window.addEventListener('touchend', onJumpEnd);
+
+        jumpBtn.addEventListener('mousedown', onJumpStart);
+        jumpBtn.addEventListener('touchstart', e => { e.preventDefault(); onJumpStart(); }, {passive: false});
+        danceBtn.addEventListener('mousedown', onDanceStart);
+        danceBtn.addEventListener('touchstart', e => { e.preventDefault(); onDanceStart(); }, {passive: false});
+        window.addEventListener('mouseup', onDanceEnd);
+        window.addEventListener('touchend', onDanceEnd);
+
+        drawInitialState();
     </script>
 </body>
 </html>
